@@ -1,0 +1,41 @@
+import "./globals.css";
+import ServiceWorkerRegister from "@/components/common/ServiceWorkerRegister";
+import Splash from "@/components/common/Splash";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import SyncProvider from "@/components/sync/SyncProvider";
+import { ConfirmProvider } from "@/components/common/ConfirmDialog";
+
+export const metadata = {
+  title: { default: "FitMate", template: "%s · FitMate" },
+  description: "Your Fitness. Your Nutrition. Your Progress.",
+  appleWebApp: { capable: true, title: "FitMate", statusBarStyle: "default" },
+  icons: { icon: "/icons/icon.svg", apple: "/icons/icon.svg" },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body className="antialiased">
+        <AuthProvider>
+          <SyncProvider>
+            <ConfirmProvider>
+              <Splash />
+              {children}
+            </ConfirmProvider>
+          </SyncProvider>
+        </AuthProvider>
+        <ServiceWorkerRegister />
+      </body>
+    </html>
+  );
+}
