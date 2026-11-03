@@ -7,9 +7,10 @@ import { LogoMark } from "@/components/common/Logo";
 import { Backdrop, Arrow } from "@/components/dashboard/Welcome";
 import Reveal, { useInView } from "./Reveal";
 
-// Positioning: FitMate does not create plans. It helps you follow the plan you already have.
+// Positioning: bring your plan or get one built for your level in minutes. Then FitMate makes sure you follow it.
 
 const SOURCES = [
+  "A plan built for your level in FitMate",
   "A plan an AI wrote for you",
   "Your coach's PDF",
   "Your gym trainer's sheet",
@@ -18,7 +19,6 @@ const SOURCES = [
   "Notes on your phone",
   "A plan you wrote yourself",
   "An Instagram routine",
-  "Last year's program",
 ];
 
 const GAP = [
@@ -29,21 +29,21 @@ const GAP = [
   ["Day 21", "The plan is still in a PDF you never open.", 10],
 ];
 
-const ISNT = ["A plan generator", "An AI coach guessing your program", "A diet app that picks your meals", "Another 40-page PDF"];
-const IS = ["Your plan, turned into today's checklist", "A rest timer that keeps you moving", "Every set and meal checked off", "A clear view of plan vs. what you actually did"];
+const ISNT = ["A one-size-fits-all program", "A plan that ignores your level", "A diet full of meals you'll never cook", "Another 40-page PDF you never open"];
+const IS = ["A plan made for your level, or the one you already have", "Today's workout and meals on one screen", "One big button to log every set, rest timer included", "Easy meals with recipes and how-to videos", "A streak and progress you can actually see"];
 
 const STEPS = [
-  ["Drop in your plan", "From AI, a coach, or a PDF. FitMate reads it and sets everything up."],
-  ["Open. Tap. Done.", "Each day shows just today. Tap a set when you finish it, and the rest timer takes it from there."],
-  ["Watch it stick", "FitMate quietly keeps score, so you always know you're on track."],
+  ["Get your plan", "Already have one? Drop in the PDF or paste it from any AI chat. Don't? Tap a few answers (level, skills, equipment, food) and FitMate builds a prompt that gets you a plan made for you."],
+  ["Open. Tap. Done.", "Today's workout and meals sit on one screen. One big button logs your next set, the rest timer starts on its own, and warm-ups stay separate from the real work."],
+  ["Watch it stick", "Your streak grows every day you follow the plan. Progress charts, personal bests and past workouts show it's working."],
 ];
 
 const FAQ = [
-  ["Does FitMate create workout or diet plans?", "No, on purpose. Getting a plan is easy now: AI, a coach or a dietitian can hand you one in minutes. FitMate's job is the part that usually fails: following it every day."],
-  ["Can I use a plan an AI made for me?", "Yes. Save it as a PDF (or JSON) and drop it in. FitMate turns it into your daily checklist."],
-  ["My plan is a PDF from my coach. Will it work?", "Yes. Upload it and FitMate reads the days, exercises, sets, reps, holds, rest times, meals and macros. Anything it isn't sure about is highlighted so you can check it before saving."],
-  ["What if I don't have a plan yet?", "Get one from someone you trust, or write your own. Once it's in FitMate, the app keeps you on it."],
-  ["What if my plan changes?", "Edit it or import the new one. Your past workouts stay exactly as you did them, so your history is never lost."],
+  ["Can FitMate make a plan for me?", "Yes. Tap a few answers (your level, the skills you're chasing, max reps, equipment, food style) and FitMate writes a prompt with your profile built in. Paste it into ChatGPT, Claude or Gemini, paste the reply back, and your plan is ready to follow."],
+  ["I already have a plan. Will it work?", "Yes. Upload your coach's PDF or JSON, or paste a plan from any AI chat. FitMate reads days, exercises, sets, reps, holds, rest, meals and macros, and highlights anything it isn't sure about before you save."],
+  ["Will the diet be hard to cook?", "No. Plans favour simple home food with a few common ingredients, short step-by-step recipes and a how-to video for each meal. Training days and rest days are fuelled differently."],
+  ["Does it work at the gym without internet?", "Yes. Your plan and logs live on your phone, so it works offline, and it syncs to your account when you're back online."],
+  ["What if my plan changes?", "Edit it, reorder exercises with a drag, or import a new one. Past workouts stay exactly as you did them."],
   ["Does it cost anything?", "No."],
 ];
 
@@ -67,7 +67,7 @@ export default function Landing() {
           <LogoMark className="h-6 w-6" />
           <span className="font-semibold text-neutral-900 dark:text-neutral-100">FitMate</span>
         </div>
-        Follow the plan you already have.
+        Get a plan that fits. Then actually follow it.
       </footer>
     </div>
   );
@@ -167,7 +167,7 @@ function Hero({ signedIn }) {
         <div className="min-w-0 text-center lg:text-left">
           <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white/60 px-3 py-1 text-xs font-medium text-neutral-600 backdrop-blur dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Not another plan generator
+            Plans that fit you. Follow-through that sticks.
           </p>
           <h1 className="animate-fade-up mt-6 text-[2.5rem] leading-[1.05] font-semibold tracking-tight [animation-delay:100ms] sm:text-6xl lg:text-[4.25rem]">
             Getting a plan takes seconds.
@@ -175,10 +175,10 @@ function Hero({ signedIn }) {
             <span className="text-gradient animate-shimmer">Following it is what changes you.</span>
           </h1>
           <p className="animate-fade-up mx-auto mt-6 max-w-xl text-lg leading-relaxed text-neutral-600 [animation-delay:200ms] lg:mx-0 dark:text-neutral-400">
-            AI, a coach or a PDF can hand you the perfect plan. None of them show up for set three on a Thursday. FitMate turns your plan into today&apos;s checklist, times every rest, and keeps you on it.
+            Bring your plan, or get one built for your level in minutes. Then FitMate puts today&apos;s workout and meals on one screen, logs every set with one tap, times your rests and keeps your streak alive.
           </p>
           <div className="animate-fade-up mt-9 flex flex-col justify-center gap-3 [animation-delay:300ms] sm:flex-row lg:justify-start">
-            <PrimaryCta signedIn={signedIn}>Start following your plan</PrimaryCta>
+            <PrimaryCta signedIn={signedIn}>Get started free</PrimaryCta>
             <a href="#gap" className="inline-flex items-center justify-center rounded-xl border border-neutral-300 px-7 py-4 font-semibold transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900">
               Why plans fail
             </a>
@@ -389,7 +389,7 @@ function Gap() {
           <p className="text-2xl font-semibold tracking-tight sm:text-3xl">
             The plan was fine. <span className="text-emerald-600 dark:text-emerald-400">The follow-through wasn&apos;t.</span>
           </p>
-          <p className="mx-auto mt-3 max-w-xl text-neutral-600 dark:text-neutral-400">That&apos;s the only thing FitMate is built to fix.</p>
+          <p className="mx-auto mt-3 max-w-xl text-neutral-600 dark:text-neutral-400">That&apos;s what FitMate is built to fix.</p>
         </Reveal>
       </div>
     </section>
@@ -441,7 +441,7 @@ function IsIsnt() {
     <section className="bg-neutral-100/60 px-5 py-28 dark:bg-neutral-900/40">
       <div className="mx-auto max-w-5xl">
         <Reveal className="text-center">
-          <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Not a planner. A follow-through app.</h2>
+          <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Not just another plan. A follow-through app.</h2>
         </Reveal>
         <div className="mt-14 grid gap-4 md:grid-cols-2">
           <Reveal className="rounded-3xl border border-neutral-200 bg-white p-8 dark:border-neutral-800 dark:bg-neutral-900">
@@ -547,16 +547,16 @@ function Features() {
           <h2 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Every feature exists to keep you on the plan.</h2>
         </Reveal>
         <div className="mt-16 grid gap-4 md:grid-cols-3">
-          <FeatureCard className="md:col-span-2" title="Today, not a 12-page PDF" text="Open the app and see only what today's plan asks for. No scrolling, no searching, no guessing what's next." delay={0}>
+          <FeatureCard className="md:col-span-2" title="Today, not a 12-page PDF" text="Open the app and see today's workout and meals together. Warm-up, main work and cool-down are laid out in order, so you never guess what's next." delay={0}>
             <TodayVisual />
           </FeatureCard>
-          <FeatureCard title="Rests that stay rests" text="The timer starts the moment you log a set and tells you when to go. Five-minute “two-minute” rests stop happening." delay={100}>
+          <FeatureCard title="One tap per set" text="A big button logs your next set and starts the rest timer. Holds get a stopwatch. Five-minute “two-minute” rests stop happening." delay={100}>
             <TimerVisual />
           </FeatureCard>
-          <FeatureCard title="Protein you can't lose track of" text="Tick off meals from your diet plan and see protein and calories against your targets, all day." delay={0}>
+          <FeatureCard title="Easy meals, right on target" text="Tick off simple meals with recipes and how-to videos, and watch protein and calories fill up against your targets." delay={0}>
             <BarsVisual />
           </FeatureCard>
-          <FeatureCard className="md:col-span-2" title="Plan vs. what you actually did" text="Every set and meal is recorded against the plan, so you see the gap early, while it's still easy to close." delay={100}>
+          <FeatureCard className="md:col-span-2" title="Streaks and progress that keep you going" text="Every set and meal counts toward your streak. Progress charts, personal bests and past workouts show the gap early, while it's easy to close." delay={100}>
             <PlanVsActual />
           </FeatureCard>
         </div>
@@ -736,13 +736,13 @@ function FinalCta({ signedIn }) {
         <div className="animate-drift absolute -right-10 -bottom-24 h-80 w-80 rounded-full bg-sky-500/20 blur-3xl [animation-delay:-7s]" />
         <div className="relative">
           <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            You&apos;ve done the planning.
+            Stop planning.
             <br />
-            <span className="text-emerald-400">Now follow through.</span>
+            <span className="text-emerald-400">Start following.</span>
           </h2>
-          <p className="mx-auto mt-5 max-w-lg text-neutral-400">Bring your plan. FitMate handles today, every day after that, and shows you it&apos;s working.</p>
+          <p className="mx-auto mt-5 max-w-lg text-neutral-400">Bring your plan or build one in minutes. FitMate handles today, every day after that, and shows you it&apos;s working.</p>
           <PrimaryCta signedIn={signedIn} className="mt-9 bg-emerald-500 text-neutral-950 shadow-emerald-500/30">
-            Start following your plan
+            Get started free
           </PrimaryCta>
         </div>
       </Reveal>

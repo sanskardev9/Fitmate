@@ -12,6 +12,7 @@ import TargetsForm from "@/components/targets/TargetsForm";
 import EndWorkoutButton from "@/components/workout/EndWorkoutButton";
 import FinishedActions from "@/components/workout/FinishedActions";
 import RecipeVideo from "@/components/diet/RecipeVideo";
+import MealSwap from "@/components/diet/MealSwap";
 
 const ICONS = {
   dumbbell: "M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11",
@@ -276,7 +277,9 @@ export function Nutrition({ data, title = "Today's meals" }) {
       {today.meals.length > 0 && (
         <ul className="mt-5 divide-y divide-neutral-100 dark:divide-neutral-800">
           {today.meals.map((m) => {
-            const done = today.logs.some((l) => l.mealId === m.id);
+            const eatenLog = today.logs.find((l) => l.mealId === m.id);
+            const done = Boolean(eatenLog);
+            const swapped = eatenLog && eatenLog.name !== m.name ? eatenLog : null;
             const expanded = open === m.id;
             return (
               <li key={m.id} className="py-3">
@@ -291,9 +294,10 @@ export function Nutrition({ data, title = "Today's meals" }) {
                   </button>
                   <button type="button" onClick={() => setOpen(expanded ? null : m.id)} className="min-w-0 flex-1 text-left">
                     <span className="block text-[11px] font-medium tracking-wide text-neutral-500 uppercase">{m.slot}</span>
-                    <span className={`block text-sm font-medium break-words ${done ? "text-neutral-400 line-through" : ""}`}>{m.name}</span>
+                    <span className={`block text-sm font-medium break-words ${done ? "text-neutral-400 line-through" : ""}`}>{swapped ? swapped.name : m.name}</span>
+                    {swapped && <span className="block text-[11px] text-emerald-600 dark:text-emerald-400">Swapped from {m.name}</span>}
                   </button>
-                  <span className="shrink-0 text-xs text-neutral-500 tabular-nums">{m.proteinG ? `${m.proteinG} g` : ""}</span>
+                  <span className="shrink-0 text-xs text-neutral-500 tabular-nums">{(swapped ?? m).proteinG ? `${Math.round((swapped ?? m).proteinG)} g` : ""}</span>
                   {(m.recipe || m.name) && (
                     <button type="button" onClick={() => setOpen(expanded ? null : m.id)} aria-label="Show recipe" className={`shrink-0 text-neutral-400 transition-transform ${expanded ? "rotate-180" : ""}`}>
                       ⌄
@@ -304,6 +308,7 @@ export function Nutrition({ data, title = "Today's meals" }) {
                   <div className="animate-fade-up mt-3 space-y-2 sm:ml-14">
                     {m.recipe && <p className="rounded-xl bg-neutral-50 p-3 text-xs leading-relaxed whitespace-pre-line text-neutral-600 dark:bg-neutral-950 dark:text-neutral-400">{m.recipe}</p>}
                     <RecipeVideo url={m.videoUrl} dish={m.name} />
+                    <MealSwap meal={m} dateKey={today.key} eatenLog={eatenLog} />
                   </div>
                 )}
               </li>

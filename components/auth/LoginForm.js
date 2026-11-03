@@ -84,10 +84,10 @@ export default function LoginForm() {
     });
   }
 
-  async function sendReset() {
-    if (!email) return setError("Enter your email above, then tap Forgot password.");
-    const ok = await run("reset", () => supabase.auth.resetPasswordForEmail(email, { redirectTo: authRedirect("/reset-password") }));
-    if (ok) setSent({ kind: "reset", email });
+  // Reset uses a 6-digit email code on its own page (no reset links).
+  function sendReset() {
+    if (!email.trim()) return setError("Type the email you signed up with above, then tap Forgot password.");
+    router.push(`/reset-password?email=${encodeURIComponent(email.trim())}`);
   }
 
   if (sent) {

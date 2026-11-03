@@ -105,6 +105,7 @@ export default function PlanImport({ kind: fixedKind, returnTo, manualHref, show
 
   return (
     <div className="space-y-2">
+      <OptionRow Icon={WandSparkles} title="Create with AI" sub="No plan? AI builds one for you" tone="amber" onClick={() => setMode("create")} />
       <OptionRow Icon={Sparkles} title="Convert with AI" sub="Have a plan? Most accurate import" tone="violet" onClick={() => setMode("ai")} />
       <label
         onDragOver={(e) => {
@@ -130,7 +131,6 @@ export default function PlanImport({ kind: fixedKind, returnTo, manualHref, show
           }}
         />
       </label>
-      <OptionRow Icon={WandSparkles} title="Create with AI" sub="No plan? AI builds one for you" tone="amber" onClick={() => setMode("create")} />
       {manualHref || kind !== "auto" ? (
         <Link href={manualHref ?? `/plans/${kind}/new`} className="block">
           <OptionRow as="div" Icon={PencilLine} title="Type it in" sub="Build it yourself" tone="neutral" />
@@ -203,6 +203,7 @@ export const AI_RULES = {
     '"slot" is one of Breakfast, Lunch, Snack, Dinner.',
     'Numbers only: "calories" in kcal, "proteinG", "carbsG", "fatG" in grams. If the plan does not give them, estimate them from the ingredients.',
     'Put ingredients and preparation steps in "recipe".',
+    '"alternatives": 2 easy swap meals for the same slot with similar calories and protein (within ~10%), each {"name","serving","calories","proteinG","carbsG","fatG","recipe"}.',
     '"videoUrl": if you can search the web, look up a real YouTube video showing how to cook that exact dish (short, popular, simple) and add its link. Without web search, leave "videoUrl" out (FitMate finds a video itself). Never invent video IDs.',
   ],
 };

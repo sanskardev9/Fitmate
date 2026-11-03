@@ -27,7 +27,7 @@ const MACROS = [
   ["fatG", "Fat"],
 ];
 
-const newMeal = (slot = "Breakfast") => ({ key: uid(), slot, name: "", serving: "", calories: "", proteinG: "", carbsG: "", fatG: "", recipe: "", videoUrl: "", flags: [] });
+const newMeal = (slot = "Breakfast") => ({ key: uid(), slot, name: "", serving: "", calories: "", proteinG: "", carbsG: "", fatG: "", recipe: "", videoUrl: "", alternatives: [], flags: [] });
 const flagged = "ring-2 ring-amber-500/70";
 const newDay = (n) => ({ key: uid(), name: n === 1 ? "Every day" : `Day ${n}`, weekdays: n === 1 ? [0, 1, 2, 3, 4, 5, 6] : [], meals: MEAL_SLOTS.map(newMeal) });
 
@@ -114,6 +114,7 @@ export default function DietPlanBuilder({ header }) {
           fatG: toNum(m.fatG),
           recipe: m.recipe.trim(),
           videoUrl: youtubeId(m.videoUrl) ? m.videoUrl.trim() : "",
+          alternatives: m.alternatives ?? [],
         })),
       })),
     });

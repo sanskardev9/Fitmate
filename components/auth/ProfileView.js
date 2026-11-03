@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, LogOut, User, Ruler, Weight, Target, CalendarDays, Dumbbell, Beef, Flame, Goal } from "lucide-react";
+import Link from "next/link";
+import { Pencil, LogOut, KeyRound, User, Ruler, Weight, Target, CalendarDays, Dumbbell, Beef, Flame, Goal } from "lucide-react";
 import { useAuth, displayName } from "./AuthProvider";
 import { cachedProfile, fetchProfile } from "@/lib/services/profileService";
 import { SyncStatus } from "./AccountButton";
@@ -85,6 +86,10 @@ export default function ProfileView() {
           </ul>
         )}
       </section>
+
+      <Link href="/reset-password" className="flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 py-3.5 font-semibold hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
+        <KeyRound className="h-5 w-5" /> Change password
+      </Link>
 
       <button
         type="button"
