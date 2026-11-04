@@ -14,6 +14,7 @@ import { importData } from "@/lib/services/backupService";
 import { saveDraft } from "@/lib/import/draft";
 import { extractJson } from "@/lib/import/extractJson";
 import Segmented from "./Segmented";
+import { useScrollTopOn } from "@/lib/useScrollTop";
 import { useConfirm } from "./ConfirmDialog";
 
 const KINDS = [
@@ -80,6 +81,7 @@ export default function PlanImport({ kind: fixedKind, returnTo, manualHref, show
   }
 
   const [mode, setMode] = useState(null);
+  useScrollTopOn(mode);
   const [pickManual, setPickManual] = useState(false);
 
   const kindsList = fixedKind ? [fixedKind] : kind === "diet" ? ["diet", "workout"] : ["workout", "diet"];

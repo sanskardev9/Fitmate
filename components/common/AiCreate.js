@@ -13,6 +13,7 @@ import { WORKOUT_TEMPLATE, DIET_TEMPLATE } from "@/lib/import/parseJson";
 import { AI_RULES, FENCE, compactJson, copyText } from "./PlanImport";
 import Segmented from "./Segmented";
 import { FOCUSES } from "@/lib/focuses";
+import { useScrollTopOn } from "@/lib/useScrollTop";
 import AiLinks from "./AiLinks";
 
 // A few taps inside FitMate, then ONE prompt; the AI replies with the plan directly, no questions.
@@ -206,6 +207,7 @@ export default function AiCreate({ kinds, onImport, onBack }) {
   const { user } = useAuth();
   const [profile, setProfile] = useState(() => (user ? cachedProfile(user.id) : null));
   const needsAbout = missingAbout(profile).length > 0;
+  useScrollTopOn(needsAbout);
   const [about, setAbout] = useState(() => aboutFromProfile(user ? cachedProfile(user.id) : null, { draft: true }));
   const [aboutError, setAboutError] = useState("");
 

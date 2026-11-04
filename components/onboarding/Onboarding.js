@@ -10,6 +10,7 @@ import AboutYou, { missingAbout, aboutFromProfile, saveAbout } from "@/component
 import { useAuth, displayName } from "@/components/auth/AuthProvider";
 import PlanImport from "@/components/common/PlanImport";
 import Logo from "@/components/common/Logo";
+import { useScrollTopOn } from "@/lib/useScrollTop";
 import { primaryButton } from "@/components/common/ui";
 
 // Two quick steps: 1) about you (needed for accurate targets and AI plans), 2) bring in or make a plan.
@@ -38,6 +39,7 @@ export default function Onboarding() {
   }, [user]);
 
   const step = missingAbout(profile).length ? "about" : "plans";
+  useScrollTopOn(step);
 
   async function continueAbout() {
     setSavingAbout(true);
@@ -46,7 +48,6 @@ export default function Onboarding() {
     if (r.error) return setAboutError(r.error);
     setAboutError("");
     setProfile(r.profile);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   const plans = useLiveQuery(async () => {
