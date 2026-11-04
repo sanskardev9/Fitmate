@@ -61,7 +61,7 @@ export default function WorkoutHome() {
       {!plan ? (
         <Empty />
       ) : (
-        <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <section className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
             <p className="text-sm text-neutral-500">Today · {WEEKDAYS[new Date().getDay()]}</p>
             {today ? (

@@ -268,3 +268,9 @@ html {
     cursor: not-allowed;
   }
 }
+
+/* Safety net: nothing can push a page wider than the screen (horizontal bleed on phones). */
+html,
+body {
+  overflow-x: clip;
+}

@@ -137,7 +137,7 @@ export default function AboutYou({ value, onChange, error }) {
 
   return (
     <div className="@container rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="grid gap-6 @3xl:grid-cols-[1fr_18rem]">
+      <div className="grid grid-cols-1 gap-6 @3xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0">
           <p className="text-base font-semibold">About you</p>
           <p className="mt-0.5 text-sm text-neutral-500">Used to set your daily targets. Saved to your profile.</p>

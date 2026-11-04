@@ -46,7 +46,7 @@ export default function ShareCard() {
           <p className="text-sm text-neutral-600 dark:text-neutral-400">Plans are easier to follow together. Share FitMate with someone who trains with you.</p>
         </div>
       </div>
-      <div className="relative mt-4 grid grid-cols-[1fr_auto_auto] gap-2">
+      <div className="relative mt-4 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2">
         <button type="button" onClick={share} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700 active:scale-[0.99]">
           <Share2 className="h-4 w-4" /> Share FitMate
         </button>

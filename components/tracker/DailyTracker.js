@@ -54,11 +54,11 @@ export default function DailyTracker() {
   return (
     <div className="space-y-4">
       <Hero data={data} insights={insights} />
-      <div className="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         <WorkoutOutcome data={data} />
         <Nutrition data={data} />
       </div>
-      <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Week week={data.week} todayKey={today.key} />
         <Bodyweight dateKey={today.key} current={data.weightToday} previous={data.previousWeight} />
       </div>

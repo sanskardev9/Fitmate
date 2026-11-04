@@ -85,7 +85,7 @@ export default function ProgressHome() {
           </div>
         </section>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <section className={card}>
             <h2 className="font-semibold">Workouts per week</h2>
             <p className="text-xs text-neutral-500">Last 8 weeks</p>

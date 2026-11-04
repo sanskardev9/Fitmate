@@ -212,7 +212,7 @@ function NextUp({ daily, onEnd }) {
         <p className="mt-2 text-sm text-emerald-100 tabular-nums">
           {done}/{today.plannedSets} sets logged
         </p>
-        <div className="mt-5 grid grid-cols-[1fr_auto] gap-3">
+        <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto] gap-3">
           <Link href="/session" className="flex items-center justify-center gap-2 rounded-2xl bg-white py-3.5 font-semibold text-emerald-700">
             <Play className="h-4 w-4 fill-current" /> Resume
           </Link>
