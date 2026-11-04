@@ -7,7 +7,7 @@ import { closeMusic, playMusic, useMusic } from "@/lib/music";
 
 // Bottom sheet: quick workout playlists + YouTube music search. Tap a song to play; the rest of the
 // list plays after it. Free: YouTube's own player, searches cached on our server.
-const PICKS = [
+const WORKOUT_PICKS = [
   ["Calisthenics", "calisthenics workout motivation music"],
   ["Gym motivation", "gym motivation songs workout mix"],
   ["Hindi gym", "hindi gym workout songs"],
@@ -17,6 +17,21 @@ const PICKS = [
   ["Running", "running music motivation mix"],
   ["Lo-fi focus", "lofi focus music"],
 ];
+// Cooking time: easy, feel-good songs for the kitchen.
+const COOKING_PICKS = [
+  ["Cooking vibes", "cooking vibes songs playlist"],
+  ["Bollywood chill", "bollywood chill songs playlist"],
+  ["Lo-fi kitchen", "lofi cooking music"],
+  ["Retro Hindi", "old hindi songs kishore kumar lata playlist"],
+  ["Acoustic", "acoustic chill songs playlist"],
+  ["Punjabi chill", "punjabi chill songs playlist"],
+  ["Jazz cafe", "jazz cafe music cooking"],
+  ["Sufi", "sufi songs playlist"],
+];
+const MODES = {
+  workout: { title: "Workout music", picks: WORKOUT_PICKS },
+  cooking: { title: "Cooking music", picks: COOKING_PICKS },
+};
 
 async function search(q) {
   const { data } = await supabase.auth.getSession();
@@ -27,8 +42,16 @@ async function search(q) {
 }
 
 export default function MusicPicker() {
-  const { picker, queue, index } = useMusic();
-  const [active, setActive] = useState(PICKS[0][1]);
+  const { picker, queue, index, mode } = useMusic();
+  const { title, picks: PICKS } = MODES[mode] ?? MODES.workout;
+  const [active, setActive] = useState(WORKOUT_PICKS[0][1]);
+  // Opened from Diet vs Workout: start on that mode's first pick.
+  useEffect(() => {
+    if (!picker) return;
+    const first = (MODES[mode] ?? MODES.workout).picks[0][1];
+    setActive((a) => ((MODES[mode] ?? MODES.workout).picks.some(([, q]) => q === a) ? a : first));
+    setText("");
+  }, [picker, mode]);
   const [text, setText] = useState("");
   const [results, setResults] = useState(null);
   const [error, setError] = useState("");
@@ -86,13 +109,13 @@ export default function MusicPicker() {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center" onClick={closeMusic}>
-      <div role="dialog" aria-label="Workout music" onClick={(e) => e.stopPropagation()} className="animate-fade-up flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-3xl bg-[var(--background)] pb-[env(safe-area-inset-bottom)] shadow-2xl [animation-duration:220ms] sm:rounded-3xl">
+      <div role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()} className="animate-fade-up flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-3xl bg-[var(--background)] pb-[env(safe-area-inset-bottom)] shadow-2xl [animation-duration:220ms] sm:rounded-3xl">
         <div className="flex shrink-0 items-center justify-between gap-3 px-5 pt-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-violet-600 text-white">
               <Music2 className="h-4 w-4" />
             </span>
-            Workout music
+            {title}
           </h2>
           <button type="button" onClick={closeMusic} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800">
             <X className="h-5 w-5" />

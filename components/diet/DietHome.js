@@ -9,6 +9,7 @@ import { loadDaily } from "@/lib/services/insights";
 import { getMealsForWeekday, getMealLogsForDate, sumNutrition } from "@/lib/services/dietService";
 import { todayKey } from "@/lib/utils";
 import PageHeader from "@/components/common/PageHeader";
+import MusicButton from "@/components/music/MusicButton";
 import { Nutrition } from "@/components/tracker/DailyTracker";
 import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
 import WeekAhead from "./WeekAhead";
@@ -45,7 +46,7 @@ export default function DietHome() {
 
   return (
     <>
-      <PageHeader title="Diet" subtitle={plan?.name} icon={Utensils} />
+      <PageHeader title="Diet" subtitle={plan?.name} icon={Utensils} action={<MusicButton mode="cooking" />} />
       {!plan && !ready ? (
         <LoadingPlans />
       ) : !plan ? (
