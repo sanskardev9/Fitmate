@@ -94,18 +94,28 @@ export default function AdminNotifications() {
               </div>
             </div>
 
-            {/* Preview */}
-            <div className="rounded-2xl bg-neutral-100 p-3 dark:bg-neutral-800/60">
-              <div className="flex gap-3 rounded-xl bg-white/90 p-3 shadow-sm dark:bg-neutral-900">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                  <Bell className="h-4 w-4" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[11px] text-neutral-500">FitMate · now</span>
-                  <span className="block text-sm font-semibold break-words">{form.title || "Title"}</span>
-                  <span className="block text-sm break-words text-neutral-600 dark:text-neutral-300">{form.body || "Your message"}</span>
-                </span>
-              </div>
+            {/* Preview: Android/desktop, and iPhone (iOS always adds "from FitMate", so the title becomes a greeting) */}
+            <div className="space-y-2 rounded-2xl bg-neutral-100 p-3 dark:bg-neutral-800/60">
+              {[
+                ["Android & computer", "FitMate · now", form.title || "Title", form.body || "Your message"],
+                ["iPhone", "now", "Hey Sanskar", [form.title, form.body].filter(Boolean).join(" ") || "Your message", "from FitMate"],
+              ].map(([label, meta, title, body, from]) => (
+                <div key={label}>
+                  <p className="mb-1 px-1 text-[11px] font-semibold text-neutral-500">{label}</p>
+                  <div className="flex gap-3 rounded-xl bg-white/90 p-3 shadow-sm dark:bg-neutral-900">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                      <Bell className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      {!from && <span className="block text-[11px] text-neutral-500">{meta}</span>}
+                      <span className="block text-sm font-semibold break-words">{title}</span>
+                      {from && <span className="block text-sm font-semibold break-words">{from}</span>}
+                      <span className="block text-sm break-words text-neutral-600 dark:text-neutral-300">{body}</span>
+                    </span>
+                  </div>
+                </div>
+              ))}
+              <p className="px-1 text-[11px] text-neutral-500">On iPhone the greeting uses each person&apos;s first name.</p>
             </div>
 
             <button type="submit" disabled={busy || !data.configured || !userIds.size} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
