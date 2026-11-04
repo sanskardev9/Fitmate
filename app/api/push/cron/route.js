@@ -41,7 +41,7 @@ async function run(request) {
   if (e2) return Response.json({ error: e2.message }, { status: 500 });
 
   const now = new Date();
-  // What each person already got in the last 24 h (for pacing).
+  // What each person already got in the last 24 h.
   const { data: recentLog } = await admin.from("notification_log").select("user_id, sent_at, sent").in("user_id", ids).gte("sent_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString());
   const pace = {};
   for (const l of recentLog ?? []) {
