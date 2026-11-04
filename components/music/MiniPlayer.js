@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { X, SkipForward, SkipBack, ListMusic, Maximize2, Minimize2, ChevronDown, Play, Pause } from "lucide-react";
-import { useMusic, stopMusic, openMusic } from "@/lib/music";
+import { useMusic, stopMusic, openMusic, restoreMusic, savePosition } from "@/lib/music";
 
 // Floating player that keeps playing across pages. It's YouTube's own player (free; YouTube's
 // rules require the video to stay visible). The rest of the list plays automatically after it;
@@ -13,7 +13,8 @@ import { useMusic, stopMusic, openMusic } from "@/lib/music";
 //   normal: a card with the video;  minimised: a "now playing" bar (video as the artwork);
 //   expanded: full screen (YouTube's fullscreen button doesn't work inside apps on phones).
 export default function MiniPlayer() {
-  const { queue, index, radio } = useMusic();
+  const { queue, index, radio, startAt } = useMusic();
+  useEffect(() => restoreMusic(), []);
   const pathname = usePathname();
   const [big, setBig] = useState(false);
   // Minimised is remembered between songs and visits.
@@ -49,6 +50,7 @@ export default function MiniPlayer() {
       const info = d?.info;
       if (!info || typeof info !== "object") return;
       setNow((n) => ({
+        id: info.videoData?.video_id || n?.id,
         title: info.videoData?.title || n?.title,
         author: info.videoData?.author || n?.author,
         at: info.playlistIndex ?? n?.at ?? 0,
@@ -108,6 +110,14 @@ export default function MiniPlayer() {
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
+  // Remember what's playing and where (every few seconds), so a reload brings it back.
+  const lastSave = useRef(0);
+  useEffect(() => {
+    if (!track || !now?.time || Date.now() - lastSave.current < 3000) return;
+    lastSave.current = Date.now();
+    const sameSong = !now.id || now.id === track.id;
+    savePosition({ id: now.id || track.id, title: now.title || track.title, channel: now.author || track.channel, time: now.time, radio: radio || !sameSong });
+  }, [now, track, radio]);
   // While playing, pages get extra room at the bottom so the player never hides content.
   useEffect(() => {
     document.documentElement.classList.toggle("music-on", Boolean(track) && !small);
@@ -132,7 +142,7 @@ export default function MiniPlayer() {
   const rest = queue.slice(index + 1, index + 30).map((t) => t.id).join(",");
   const origin = typeof window === "undefined" ? "" : `&origin=${encodeURIComponent(window.location.origin)}`;
   const list = radio ? `&list=RD${track.id}` : rest ? `&playlist=${rest}` : "";
-  const src = `https://www.youtube-nocookie.com/embed/${track.id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1${origin}${list}`;
+  const src = `https://www.youtube-nocookie.com/embed/${track.id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1${startAt ? `&start=${startAt}` : ""}${origin}${list}`;
   const command = (func) => frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args: [] }), "*");
   const listen = () => frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1, channel: "widget" }), "*");
   const at = now?.at ?? 0;
