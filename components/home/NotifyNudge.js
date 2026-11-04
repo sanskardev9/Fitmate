@@ -29,7 +29,7 @@ export default function NotifyNudge({ streak = 0 }) {
     const s = pushSupport();
     if (Date.now() < readState().until) return;
     // Never nag when they blocked it or the browser can't do it.
-    if (s.needsInstall) return void (setInstall(true), setShow(true));
+    if (s.needsInstall) return; // the Home Screen suggestion comes first on iPhone
     if (!s.ok || permission() === "denied") return;
     currentSubscription().then((sub) => setShow(!(sub && permission() === "granted")));
   }, []);

@@ -15,6 +15,7 @@ import FinishedActions from "@/components/workout/FinishedActions";
 import { Nutrition } from "@/components/tracker/DailyTracker";
 import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
 import NotifyNudge from "./NotifyNudge";
+import InstallNudge from "./InstallNudge";
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -71,6 +72,7 @@ export default function HomeToday() {
       <NextUp daily={daily} onEnd={endWorkout} />
       {daily.prefs.activeDietPlanId ? <Nutrition data={daily} /> : <AddDiet />}
       <StreakCard streak={streak} />
+      <InstallNudge />
       <NotifyNudge streak={streak.current} />
 
       {celebrate && <Celebration count={streak.current} onClose={() => setCelebrate(false)} />}
