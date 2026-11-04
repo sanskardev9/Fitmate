@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { RotateCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // Pull down from the top to refresh, for FitMate opened from the Home Screen (no browser
 // refresh button there). Browsers already have their own, so this only runs in the installed app.
@@ -24,6 +25,11 @@ export default function PullToRefresh() {
   const [refreshing, setRefreshing] = useState(false);
   const start = useRef(null);
   const dist = useRef(0);
+  const nav = useRouter();
+  const router = useRef(nav);
+  useEffect(() => {
+    router.current = nav;
+  }, [nav]);
 
   useEffect(() => {
     const installed = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
@@ -53,7 +59,16 @@ export default function PullToRefresh() {
         setRefreshing(true);
         setPull(TRIGGER);
         navigator.vibrate?.(10);
-        setTimeout(() => window.location.reload(), 350);
+        // Music playing? A full reload would stop it: refresh the data in place instead.
+        const music = document.documentElement.matches(".music-on, .music-small");
+        if (music) {
+          window.dispatchEvent(new Event("fitmate:sync"));
+          router.current.refresh();
+          setTimeout(() => {
+            setRefreshing(false);
+            setPull(0);
+          }, 900);
+        } else setTimeout(() => window.location.reload(), 350);
       } else setPull(0);
       dist.current = 0;
     };

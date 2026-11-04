@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Play, Search } from "lucide-react";
 import { youtubeId, youtubeSearchUrl } from "@/lib/youtube";
+import { holdMusic, releaseMusic } from "@/lib/music";
 
 // Recipe video: the plan's own link if it has one, otherwise FitMate finds one (server, cached per dish).
 // Shows a thumbnail first (no data used) and plays inline on tap. Nothing found -> a YouTube search link.
@@ -28,6 +29,14 @@ export default function RecipeVideo({ url, dish, search, kind = "recipe", autopl
   const [found, setFound] = useState(own ? { id: own } : null); // null = looking, {id:null} = none
   const [playing, setPlaying] = useState(autoplay);
   const [thumb, setThumb] = useState(startThumb);
+  const who = useId();
+  const live = playing && Boolean(found?.id);
+  // While this video plays, workout music pauses; it picks up again when the video closes.
+  useEffect(() => {
+    if (!live) return;
+    holdMusic(who);
+    return () => releaseMusic(who);
+  }, [live, who]);
 
   useEffect(() => {
     if (own) return setFound({ id: own });

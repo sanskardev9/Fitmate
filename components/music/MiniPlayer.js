@@ -61,6 +61,53 @@ export default function MiniPlayer() {
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [track]);
+  // A recipe or form video started: pause, and resume when it closes (if the music was playing).
+  const heldWhilePlaying = useRef(false);
+  const playingRef = useRef(false);
+  playingRef.current = now?.state === 1 || now?.state === 3;
+  useEffect(() => {
+    const post = (func) => frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args: [] }), "*");
+    const onHold = (e) => {
+      if (e.detail) {
+        if (playingRef.current) heldWhilePlaying.current = true;
+        post("pauseVideo");
+      } else if (heldWhilePlaying.current) {
+        heldWhilePlaying.current = false;
+        post("playVideo");
+      }
+    };
+    window.addEventListener("fitmate:music-hold", onHold);
+    return () => window.removeEventListener("fitmate:music-hold", onHold);
+  }, []);
+  // A song you just tapped starts by itself: some browsers ignore autoplay in the link, so once the
+  // player is ready we tell it to play (for a few seconds after the tap, while that's allowed).
+  const wantPlay = useRef(0);
+  useEffect(() => {
+    if (track) wantPlay.current = Date.now();
+  }, [track]);
+  useEffect(() => {
+    const st = now?.state;
+    if (!wantPlay.current) return;
+    if (st === 1) wantPlay.current = 0;
+    else if ((st === -1 || st === 5 || st === undefined) && now && Date.now() - wantPlay.current < 8000) {
+      frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: [] }), "*");
+    }
+  }, [now]);
+  // Switched to another app or window and the browser paused the music: carry on when they're back.
+  useEffect(() => {
+    let wasPlaying = false;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") wasPlaying = playingRef.current;
+      else if (wasPlaying) {
+        wasPlaying = false;
+        setTimeout(() => {
+          if (!playingRef.current && !heldWhilePlaying.current) frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: [] }), "*");
+        }, 400);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
   // While playing, pages get extra room at the bottom so the player never hides content.
   useEffect(() => {
     document.documentElement.classList.toggle("music-on", Boolean(track) && !small);

@@ -34,12 +34,14 @@ export default function SyncProvider({ children }) {
     const interval = setInterval(tick, INTERVAL_MS);
     const offChange = onLocalChange(soon);
     window.addEventListener("online", run);
+    window.addEventListener("fitmate:sync", run);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearInterval(interval);
       clearTimeout(debounce);
       offChange();
       window.removeEventListener("online", run);
+      window.removeEventListener("fitmate:sync", run);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [userId]);
