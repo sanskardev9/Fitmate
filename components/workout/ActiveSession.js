@@ -9,7 +9,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db/dexie";
 import { getPreferences } from "@/lib/services/preferencesService";
 import { getDaysForPlan, getDayForWeekday } from "@/lib/services/workoutService";
-import { startSession, getActiveSession, getSessionSets, logSet, deleteSet, finishSession, discardSession, lastPerformance, swapExercise } from "@/lib/services/sessionService";
+import { startSession, getActiveSession, getSessionSets, logSet, deleteSet, finishSession, discardSession, lastPerformance, swapExercise, updateSet } from "@/lib/services/sessionService";
 import SwapSheet from "./SwapSheet";
 import { startRest, skipRest, unlockAudio, getAutoRest, restAlert, getRest, subscribeRest } from "@/lib/workout/restTimer";
 import { formatDuration, WEEKDAYS } from "@/lib/utils";
@@ -188,9 +188,13 @@ export default function ActiveSession() {
             )}
             {section !== "main" ? (
               // Warm-up / cool-down: one compact row, tap a chip per set.
-              <section className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${complete ? "border-emerald-500/40 bg-emerald-500/5" : "border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"}`}>
+              <section className={`rounded-2xl border px-4 py-3 ${complete ? "border-emerald-500/40 bg-emerald-500/5" : "border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"}`}>
+                <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className={`text-sm font-medium break-words ${complete ? "text-neutral-400 line-through" : ""}`}>{ex.name}</p>
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className={`text-sm font-medium break-words ${complete ? "text-neutral-400 line-through" : ""}`}>{ex.name}</span>
+                    <FormVideoButton open={formOpen === ex.exerciseId} onToggle={() => setFormOpen((v) => (v === ex.exerciseId ? null : ex.exerciseId))} />
+                  </p>
                   <p className="text-xs text-neutral-500">
                     {ex.sets} × {target ?? "–"}
                     {ex.type === "hold" ? "s" : " reps"}
@@ -212,6 +216,8 @@ export default function ActiveSession() {
                     );
                   })}
                 </div>
+                </div>
+                {formOpen === ex.exerciseId && <FormVideo name={ex.name} />}
               </section>
             ) : (
             <section className={`overflow-hidden rounded-2xl border bg-white transition-colors dark:bg-neutral-900 ${complete ? "border-emerald-500/50" : "border-neutral-200 dark:border-neutral-800"}`}>
@@ -247,7 +253,7 @@ export default function ActiveSession() {
               {(() => {
                 // Weight column only for weighted work (planned weight or weight used before).
                 const weighted = Boolean(ex.weight) || (last?.[ex.name]?.sets ?? []).some((x) => x.weight);
-                const cols = weighted ? "grid-cols-[2.25rem_1fr_1fr_3rem]" : "grid-cols-[2.25rem_1fr_3rem]";
+                const cols = weighted ? "grid-cols-[2.25rem_minmax(0,1.5fr)_minmax(0,1fr)_3rem]" : "grid-cols-[2.25rem_1fr_3rem]";
                 return (
                   <>
                     <div className={`mt-3 grid ${cols} items-center gap-2 px-3 pb-1 text-[11px] font-medium tracking-wide text-neutral-400 uppercase`}>
@@ -384,9 +390,24 @@ function NextSetBar({ next, draft, onLog, onFinish }) {
 }
 
 function SetRow({ rowId, label, ex, cols, weighted, draft, logged, isNext, onDraft, onLog, onUndo, onTime, onRemove }) {
-  const value = logged ? String((ex.type === "hold" ? logged.holdSec : logged.reps) ?? "") : draft.value;
-  const weight = logged ? String(logged.weight ?? "") : draft.weight;
+  const hold = ex.type === "hold";
+  const [fixing, setFixing] = useState(null); // editing a logged set: { value, weight }
+  const loggedValue = logged ? String((hold ? logged.holdSec : logged.reps) ?? "") : "";
+  const value = fixing ? fixing.value : logged ? loggedValue : draft.value;
+  const weight = fixing ? fixing.weight : logged ? String(logged.weight ?? "") : draft.weight;
+  const target = Number(targetOf(ex)) || 0;
+  const short = logged && !fixing && target && Number(loggedValue) < target; // did fewer than the plan
+  const step = hold ? 5 : 1;
+  const editable = !logged || fixing;
+  const change = (patch) => (fixing ? setFixing((f) => ({ ...f, ...patch })) : onDraft(patch));
+  const bump = (d) => change({ value: String(Math.max(0, (Number(value) || 0) + d * step)) });
+  const saveFix = async () => {
+    const v = Number(fixing.value);
+    if (v > 0) await updateSet(logged.id, { [hold ? "holdSec" : "reps"]: v, weight: Number(fixing.weight) || null });
+    setFixing(null);
+  };
   const field = "h-12 w-full rounded-xl text-center text-base font-semibold tabular-nums outline-none focus:ring-2 focus:ring-emerald-500 bg-neutral-100 disabled:bg-transparent dark:bg-neutral-800 dark:disabled:bg-transparent";
+  const stepBtn = "absolute top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-200 active:scale-95 dark:hover:bg-neutral-700";
 
   return (
     <div
@@ -406,20 +427,39 @@ function SetRow({ rowId, label, ex, cols, weighted, draft, logged, isNext, onDra
         )}
       </span>
       <div className="relative">
-        <input type="number" inputMode="numeric" min="0" value={value} disabled={Boolean(logged)} onChange={(e) => onDraft({ value: e.target.value })} aria-label={`Set ${label} ${holdLabel(ex)}`} className={field} />
-        {ex.type === "hold" && !logged && (
+        {logged && !fixing ? (
+          // Logged: tap the number to fix it. Fewer than the plan shows in amber as "8 /12".
+          <button type="button" onClick={() => setFixing({ value: loggedValue, weight: String(logged.weight ?? "") })} title="Tap to change" aria-label={`Change set ${label}`} className={`flex h-12 w-full items-center justify-center rounded-xl text-base font-semibold tabular-nums hover:bg-neutral-100 dark:hover:bg-neutral-800 ${short ? "text-amber-600 dark:text-amber-400" : ""}`}>
+            {loggedValue}
+            {hold ? "s" : ""}
+            {short ? <span className="ml-0.5 text-xs font-medium text-neutral-400">/{target}</span> : null}
+          </button>
+        ) : (
+          <>
+            <input type="number" inputMode="numeric" min="0" value={value} onChange={(e) => change({ value: e.target.value })} onKeyDown={(e) => fixing && e.key === "Enter" && saveFix()} aria-label={`Set ${label} ${holdLabel(ex)}`} className={`${field} px-9`} />
+            <button type="button" onClick={() => bump(-1)} aria-label={hold ? "5 seconds less" : "One rep less"} className={`${stepBtn} left-1`}>
+              <Minus className="h-4 w-4" />
+            </button>
+            {!(hold && !fixing) && (
+              <button type="button" onClick={() => bump(1)} aria-label={hold ? "5 seconds more" : "One rep more"} className={`${stepBtn} right-1`}>
+                <Plus className="h-4 w-4" />
+              </button>
+            )}
+          </>
+        )}
+        {hold && !logged && (
           <button type="button" onClick={onTime} aria-label={`Time set ${label}`} className="absolute top-1/2 right-1.5 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-emerald-600 text-white">
             <Play className="h-3.5 w-3.5 fill-current" />
           </button>
         )}
       </div>
       {weighted && (
-        <input type="number" inputMode="decimal" min="0" step="0.5" placeholder="–" value={weight} disabled={Boolean(logged)} onChange={(e) => onDraft({ weight: e.target.value })} aria-label={`Set ${label} weight`} className={field} />
+        <input type="number" inputMode="decimal" min="0" step="0.5" placeholder="–" value={weight} disabled={!editable} onChange={(e) => change({ weight: e.target.value })} aria-label={`Set ${label} weight`} className={field} />
       )}
       <button
         type="button"
-        aria-label={logged ? `Undo set ${label}` : `Log set ${label}`}
-        onClick={logged ? onUndo : onLog}
+        aria-label={fixing ? `Save set ${label}` : logged ? `Undo set ${label}` : `Log set ${label}`}
+        onClick={fixing ? saveFix : logged ? onUndo : onLog}
         className={`flex h-12 w-12 items-center justify-center justify-self-end rounded-xl transition-colors active:scale-95 ${
           logged ? "bg-emerald-500 text-white" : isNext ? "bg-emerald-600 text-white" : "bg-neutral-100 text-neutral-400 dark:bg-neutral-800"
         }`}
