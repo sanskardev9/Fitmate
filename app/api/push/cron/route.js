@@ -36,7 +36,7 @@ async function run(request) {
 
   const { data: profiles, error: e2 } = await admin
     .from("profiles")
-    .select("id, full_name, timezone, streak_current, streak_freezes, streak_day, streak_today, plan_week, notify_workout, notify_workout_time, notify_streak, notify_morning")
+    .select("id, full_name, timezone, streak_current, streak_freezes, streak_day, streak_today, plan_week, notify_workout, notify_workout_time, notify_streak, notify_morning, notify_meals, today_log")
     .in("id", ids);
   if (e2) return Response.json({ error: e2.message }, { status: 500 });
 

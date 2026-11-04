@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff, Dumbbell, Flame, Timer, Minus, Plus, Send, Share, Sunrise } from "lucide-react";
+import { Bell, BellOff, Dumbbell, Flame, Timer, Minus, Plus, Send, Share, Sunrise, Utensils } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { cachedProfile, fetchProfile } from "@/lib/services/profileService";
 import { supabase } from "@/lib/supabase/client";
@@ -21,7 +21,7 @@ export default function NotificationsCard() {
   const [support, setSupport] = useState(null);
   const [perm, setPerm] = useState("default");
   const [on, setOn] = useState(false);
-  const [prefs, setPrefs] = useState({ notify_morning: true, notify_workout: true, notify_workout_time: "07:00", notify_streak: true });
+  const [prefs, setPrefs] = useState({ notify_morning: true, notify_meals: true, notify_workout: true, notify_workout_time: "07:00", notify_streak: true });
   const [restOn, setRestOn] = useState(true);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(null);
@@ -46,7 +46,7 @@ export default function NotificationsCard() {
     } catch {}
     currentSubscription().then((s) => setOn(Boolean(s) && permission() === "granted"));
     if (!user) return;
-    const pick = (p) => p && setPrefs({ notify_morning: p.notify_morning ?? true, notify_workout: p.notify_workout ?? true, notify_workout_time: p.notify_workout_time ?? "07:00", notify_streak: p.notify_streak ?? true });
+    const pick = (p) => p && setPrefs({ notify_morning: p.notify_morning ?? true, notify_meals: p.notify_meals ?? true, notify_workout: p.notify_workout ?? true, notify_workout_time: p.notify_workout_time ?? "07:00", notify_streak: p.notify_streak ?? true });
     pick(cachedProfile(user.id));
     fetchProfile(user.id).then(pick).catch(() => {});
   }, [user]);
@@ -156,6 +156,7 @@ export default function NotificationsCard() {
           <ul className="mt-4 space-y-2.5 text-sm text-neutral-600 dark:text-neutral-300">
             <li className="flex gap-2.5"><Sunrise className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" /> Your plan for the day every morning</li>
             <li className="flex gap-2.5"><Dumbbell className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> A nudge on workout days, at the time you pick</li>
+            <li className="flex gap-2.5"><Utensils className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" /> A reminder when a meal isn&apos;t logged yet</li>
             <li className="flex gap-2.5"><Flame className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" /> A heads-up before your streak ends at midnight</li>
             <li className="flex gap-2.5"><Timer className="mt-0.5 h-4 w-4 shrink-0 text-sky-500" /> Rest timer alerts when you switch apps</li>
           </ul>
@@ -182,6 +183,9 @@ export default function NotificationsCard() {
                   </button>
                 </div>
               )}
+            </li>
+            <li className="py-3">
+              <Row Icon={Utensils} tint="text-rose-500" title="Meal reminders" sub="A nudge when a meal from your plan isn't logged by its time" checked={prefs.notify_meals} onChange={(v) => update({ notify_meals: v })} />
             </li>
             <li className="py-3">
               <Row Icon={Flame} tint="text-orange-500" title="Streak reminders" sub="8 pm and a last call at 10:30 pm, only if today isn't done yet" checked={prefs.notify_streak} onChange={(v) => update({ notify_streak: v })} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Smartphone, Send, Flame, Dumbbell, Megaphone, CheckCircle2, AlertTriangle, Sunrise } from "lucide-react";
+import { Bell, Smartphone, Send, Flame, Dumbbell, Megaphone, CheckCircle2, AlertTriangle, Sunrise, Utensils } from "lucide-react";
 import { useAdminData, adminApi } from "./AdminShell";
 import { card, ago, userName, Avatar, PageTitle, Stat, Section, Skeleton } from "./ui";
 
@@ -11,7 +11,7 @@ const KIND = {
   streak_evening: ["Streak · 8 pm", Flame, "text-orange-500"],
   streak_last: ["Streak · last call", Flame, "text-rose-500"],
 };
-const kindOf = (k) => KIND[k] ?? (k.startsWith("broadcast") ? ["Message to everyone", Megaphone, "text-violet-500"] : k.startsWith("admin") ? ["Message to one user", Send, "text-sky-500"] : [k, Bell, "text-neutral-500"]);
+const kindOf = (k) => KIND[k] ?? (k.startsWith("meal_") ? [`Meal · ${k.slice(5)}`, Utensils, "text-rose-500"] : null) ?? (k.startsWith("broadcast") ? ["Message to everyone", Megaphone, "text-violet-500"] : k.startsWith("admin") ? ["Message to one user", Send, "text-sky-500"] : [k, Bell, "text-neutral-500"]);
 const device = (ua = "") => (/iphone|ipad/i.test(ua) ? "iPhone" : /android/i.test(ua) ? "Android" : /mac/i.test(ua) ? "Mac" : /windows/i.test(ua) ? "Windows" : "Browser");
 
 export default function AdminNotifications() {
@@ -77,11 +77,11 @@ export default function AdminNotifications() {
             </div>
             <label className="block">
               <span className="mb-1.5 flex justify-between text-xs font-semibold text-neutral-500">Title <span className="tabular-nums">{form.title.length}/80</span></span>
-              <input value={form.title} maxLength={80} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="New: meal swaps are here 🍛" className="h-11 w-full rounded-xl border border-neutral-200 bg-transparent px-3 text-sm outline-none focus:border-emerald-500 dark:border-neutral-700" />
+              <input value={form.title} maxLength={80} onChange={(e) => { setForm((f) => ({ ...f, title: e.target.value })); setNote(null); }} placeholder="New: meal swaps are here 🍛" className="h-11 w-full rounded-xl border border-neutral-200 bg-transparent px-3 text-sm outline-none focus:border-emerald-500 dark:border-neutral-700" />
             </label>
             <label className="block">
               <span className="mb-1.5 flex justify-between text-xs font-semibold text-neutral-500">Message <span className="tabular-nums">{form.body.length}/240</span></span>
-              <textarea value={form.body} maxLength={240} rows={3} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} placeholder="Swap any meal for one with the same protein. Tap to try it." className="w-full resize-none rounded-xl border border-neutral-200 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-emerald-500 dark:border-neutral-700" />
+              <textarea value={form.body} maxLength={240} rows={3} onChange={(e) => { setForm((f) => ({ ...f, body: e.target.value })); setNote(null); }} placeholder="Swap any meal for one with the same protein. Tap to try it." className="w-full resize-none rounded-xl border border-neutral-200 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-emerald-500 dark:border-neutral-700" />
             </label>
             <div>
               <p className="mb-1.5 text-xs font-semibold text-neutral-500">Opens</p>
@@ -119,6 +119,7 @@ export default function AdminNotifications() {
           <ul className="space-y-3 text-sm">
             {[
               [Sunrise, "text-amber-500", "Morning plan · 8 am", "Today's first meal and workout. Skipped when their workout reminder is already set for the morning, so they only get one."],
+              [Utensils, "text-rose-500", "Meal reminders", "About 45 minutes after each meal's time (the plan's time, or 8:30 / 1:30 / 5:00 / 8:30) if it isn't logged. One at a time, never on top of another reminder."],
               [Dumbbell, "text-emerald-600", "Workout reminder", "On workout days at the time they pick (7 am by default), unless they've already done it."],
               [Flame, "text-orange-500", "Streak · 8 pm", "If they have a streak and today's plan isn't done yet. Mentions their freezes."],
               [Flame, "text-rose-500", "Streak · last call 10:30 pm", "Same check, last chance before the streak ends at midnight."],
