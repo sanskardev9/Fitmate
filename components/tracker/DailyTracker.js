@@ -16,7 +16,7 @@ import { Repeat2, Plus, Trash2, X, Check } from "lucide-react";
 import AddFoodSheet from "@/components/diet/AddFoodSheet";
 import MealSwap from "@/components/diet/MealSwap";
 import { friendlyRecipe } from "@/lib/diet/groceries";
-import { FOODS, scaleFood } from "@/lib/data/foods";
+import { gapSuggestions } from "@/lib/diet/gapTips";
 import { dishName, mealTiming } from "@/lib/diet/dishName";
 
 const ICONS = {
@@ -304,39 +304,35 @@ export function Nutrition({ data, title = "Today's meals" }) {
         })}
       </div>
       {(() => {
-        // Following the plan still leaves fat short: the plan itself is low. One tap adds a top-up,
-        // with values from FitMate's food list, sized to the gap.
-        const planFat = data.plannedNutrition?.fatG ?? 0;
-        const short = Math.round((targets.fatG || 0) - planFat);
-        const stillShort = (targets.fatG || 0) - eaten.fatG;
-        if (!planFat || short < Math.max(5, (targets.fatG || 0) * 0.1) || stillShort < 3) return null;
-        const byName = (n) => FOODS.find((x) => x.name.startsWith(n));
-        const g = Math.min(40, Math.max(10, Math.round(stillShort / 0.5 / 5) * 5)); // peanuts are ~50% fat
-        const options = [
-          [byName("Peanuts"), `${g} g`],
-          [byName("Ghee"), stillShort >= 10 ? "14 g" : "5 g"],
-          [byName("Full-fat curd"), "200 g"],
-        ].filter(([food]) => food);
+        // After today's planned meals, anything still well short gets a few foods sized to the gap,
+        // foods from today's own meals first. One tap logs it.
+        const tip = gapSuggestions({ targets, eaten, meals: today.meals, logs: today.logs, swaps: data.swaps });
+        if (!tip) return null;
+        const what = { calories: "calories", proteinG: "protein", carbsG: "carbs", fatG: "fat" }[tip.focus];
+        const allEaten = today.meals.length > 0 && today.eatenPlanned >= today.meals.length;
         return (
           <div className="mt-3 rounded-xl bg-violet-500/10 px-3.5 py-3 text-xs text-violet-900 dark:text-violet-200">
             <p>
-              <b className="font-semibold">Your plan is {short} g low on fat today.</b> Add one of these to close the gap:
+              <b className="font-semibold">
+                {allEaten ? "Today" : "Even after your remaining meals, today"} is {tip.gap} {tip.unit} short on {what}.
+              </b>{" "}
+              Add one of these:
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {options.map(([food, amount]) => {
-                const v = scaleFood(food, amount);
-                const label = food.name.split(" (")[0];
-                return (
-                  <button
-                    key={food.name}
-                    type="button"
-                    onClick={() => logExtraFood(today.key, { name: label, serving: amount === "14 g" ? "1 tbsp (14 g)" : amount === "5 g" ? "1 tsp (5 g)" : amount, ...v })}
-                    className="rounded-full bg-white px-3 py-1.5 font-semibold text-violet-800 shadow-sm ring-1 ring-violet-500/20 transition-transform hover:bg-violet-50 active:scale-95 dark:bg-neutral-900 dark:text-violet-200 dark:hover:bg-neutral-800"
-                  >
-                    + {amount === "14 g" ? "1 tbsp" : amount === "5 g" ? "1 tsp" : amount} {label.toLowerCase()} <span className="font-normal opacity-70">· {v.fatG} g fat</span>
-                  </button>
-                );
-              })}
+              {tip.items.map((it) => (
+                <button
+                  key={it.name}
+                  type="button"
+                  onClick={() => logExtraFood(today.key, { name: it.name, serving: it.serving, calories: it.calories, proteinG: it.proteinG, carbsG: it.carbsG, fatG: it.fatG })}
+                  className="rounded-full bg-white px-3 py-1.5 text-left font-semibold text-violet-800 shadow-sm ring-1 ring-violet-500/20 transition-transform hover:bg-violet-50 active:scale-95 dark:bg-neutral-900 dark:text-violet-200 dark:hover:bg-neutral-800"
+                >
+                  + {it.serving} {it.name.toLowerCase()}{" "}
+                  <span className="font-normal opacity-70">
+                    · {Math.round(it[tip.focus])} {tip.unit} {tip.focus === "calories" ? "" : what}
+                    {it.fromPlan ? " · in your plan" : ""}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         );

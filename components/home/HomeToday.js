@@ -72,7 +72,7 @@ export default function HomeToday() {
 
       <NextUp daily={daily} onEnd={endWorkout} />
       {daily.prefs.activeDietPlanId ? <Nutrition data={daily} /> : <AddDiet />}
-      <StreakCard streak={streak} />
+      <StreakCard streak={streak} goal={Number(data.prefs.streakGoal) || null} />
       <InstallNudge />
       <NotifyNudge streak={streak.current} />
 
@@ -151,7 +151,10 @@ function StreakPill({ count, lit }) {
 
 const MILESTONES = [3, 7, 14, 30, 50, 100, 200, 365];
 
-function StreakCard({ streak }) {
+const GOALS = [7, 14, 30, 50, 100];
+
+function StreakCard({ streak, goal }) {
+  const [picking, setPicking] = useState(false);
   const { current, best, week, today, freezes, recentFreeze, nextFreezeIn } = streak;
   const lit = current > 0 || today.status === "done";
   const message =
@@ -162,8 +165,20 @@ function StreakCard({ streak }) {
         : current > 0
           ? "Follow today's plan before midnight to keep it."
           : "Follow today's plan to start a streak.";
-  const next = MILESTONES.find((m) => m > current) ?? current + 100;
-  const prev = [...MILESTONES].reverse().find((m) => m <= current) ?? 0;
+  // Your own goal when you've set one; otherwise the next milestone (3, 7, 14, 30 …).
+  const reached = goal && current >= goal;
+  const next = goal && !reached ? goal : (MILESTONES.find((m) => m > current) ?? current + 100);
+  const prev = goal && !reached ? 0 : ([...MILESTONES].reverse().find((m) => m <= current) ?? 0);
+  // Buttons inside the card's link: don't open the streak page.
+  const tap = (fn) => (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fn();
+  };
+  const choose = (n) => {
+    setPreference("streakGoal", n);
+    setPicking(false);
+  };
   const toNext = Math.round(((current - prev) / (next - prev)) * 100);
   // Days that keep the chain going: followed, or saved by a freeze.
   const kept = (d) => d.status === "done" || d.status === "frozen";
@@ -206,10 +221,27 @@ function StreakCard({ streak }) {
         })}
       </div>
 
-      {/* Next streak milestone (3, 7, 14, 30 … days). */}
+      {/* Your streak goal (asked once, like Duolingo), or the next milestone. */}
+      {!goal || picking || reached ? (
+        <div className="relative mt-5 rounded-2xl bg-white/70 p-3 ring-1 ring-orange-500/15 dark:bg-neutral-950/50">
+          <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{reached && !picking ? `Goal reached: ${goal} days! Pick your next goal` : "Pick your streak goal"}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {GOALS.filter((n) => n > current).map((n) => (
+              <button key={n} type="button" onClick={tap(() => choose(n))} className={`rounded-full px-3 py-1.5 text-xs font-bold transition-transform active:scale-95 ${goal === n ? "bg-orange-500 text-white" : "bg-orange-500/10 text-orange-700 hover:bg-orange-500/20 dark:text-orange-300"}`}>
+                {n} days
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="relative mt-5">
-        <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-          {next - current === 1 ? "1 more day" : `${next - current} more days`} to a {next}-day streak
+        <p className="flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          {next - current === 1 ? "1 more day" : `${next - current} more days`} to {goal && !reached ? `your ${next}-day goal` : `a ${next}-day streak`}
+          {goal && !reached && !picking && (
+            <button type="button" onClick={tap(() => setPicking(true))} className="font-medium text-orange-600 hover:underline dark:text-orange-400">
+              Change
+            </button>
+          )}
         </p>
         <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
           <span className="block h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-[width] duration-1000" style={{ width: `${Math.max(4, toNext)}%` }} />
