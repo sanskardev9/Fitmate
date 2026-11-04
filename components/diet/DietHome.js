@@ -11,6 +11,7 @@ import { todayKey } from "@/lib/utils";
 import PageHeader from "@/components/common/PageHeader";
 import { Nutrition } from "@/components/tracker/DailyTracker";
 import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
+import WeekAhead from "./WeekAhead";
 import { dishName } from "@/lib/diet/dishName";
 
 // Only real days: from the plan's start (or account start), plus any day with logged meals.
@@ -56,7 +57,10 @@ export default function DietHome() {
           </Link>
         </div>
       ) : (
-        <Nutrition data={daily} />
+        <>
+          <Nutrition data={daily} />
+          <WeekAhead planId={plan.id} />
+        </>
       )}
 
       <section className="mt-6">
