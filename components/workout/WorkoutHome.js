@@ -19,6 +19,7 @@ import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
 import { FormVideoButton, FormVideo } from "./FormVideo";
 import MusicButton from "@/components/music/MusicButton";
 import { inferSections } from "@/lib/workout/sections";
+import { progressedPlan, blockWeek, BLOCK_WEEKS } from "@/lib/workout/progression";
 import { WorkoutOutcome } from "@/components/tracker/DailyTracker";
 
 async function load() {
@@ -33,7 +34,11 @@ async function load() {
   const daily = await loadDaily();
   const ended = daily.active ? null : (daily.finished ?? null);
   const endedSets = daily.today.doneSets;
-  return { active, plan, today, todayExercises, days, history, ended, endedSets, daily };
+  // Today's targets with progressive overload applied (what the workout will ask for), and the block week.
+  const progressed = today ? await progressedPlan(plan.id, inferSections(todayExercises).map((e) => ({ ...e, section: e.section ?? "main" }))) : [];
+  const targets = new Map(progressed.map((p) => [p.id, p]));
+  const block = plan ? await blockWeek(plan.id) : null;
+  return { active, plan, today, todayExercises, days, history, ended, endedSets, daily, targets, block };
 }
 
 // Workout tab: resume / start today's session, pick another day, see recent sessions.
@@ -50,7 +55,7 @@ export default function WorkoutHome() {
   const router = useRouter();
   const data = useLiveQuery(load, []);
   if (!data) return <PageHeader title="Workout" />;
-  const { active, plan, today, todayExercises, days, history, ended, endedSets, daily } = data;
+  const { active, plan, today, todayExercises, days, history, ended, endedSets, daily, targets, block } = data;
   const endedPlanned = daily.today.plannedSets;
 
   async function swapAndStart(alt) {
@@ -65,6 +70,19 @@ export default function WorkoutHome() {
     <>
       {swapFor && <SwapSheet exercise={swapFor} onClose={() => setSwapFor(null)} onPick={swapAndStart} startsWorkout={!(active && active.dayId === today?.id)} />}
       <PageHeader title="Workout" subtitle={plan?.name} icon={Dumbbell} action={<MusicButton />} />
+      {block && (
+        <div className={`mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl px-4 py-3 text-sm ${block.deload ? "bg-sky-500/10 text-sky-900 dark:text-sky-200" : "bg-emerald-500/10 text-emerald-900 dark:text-emerald-200"}`}>
+          <span className="font-semibold">
+            Block {block.block} · Week {block.week} of {BLOCK_WEEKS}
+          </span>
+          <span className="flex gap-1" aria-hidden>
+            {Array.from({ length: BLOCK_WEEKS }, (_, i) => (
+              <span key={i} className={`h-1.5 w-6 rounded-full ${i < block.week ? (block.deload && i === block.week - 1 ? "bg-sky-500" : "bg-emerald-500") : "bg-current opacity-15"}`} />
+            ))}
+          </span>
+          <span className="text-xs opacity-80">{block.deload ? "Lighter week: fewer sets so you recover. Full effort again next week." : "Targets go up when you hit them. Week 4 is a lighter week."}</span>
+        </div>
+      )}
 
       {active && (
         <Link href="/session" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-emerald-600 p-5 text-white shadow-lg shadow-emerald-600/20">
@@ -111,7 +129,17 @@ export default function WorkoutHome() {
                                 <div className="flex items-center justify-between gap-3">
                                   <span className="min-w-0 font-medium break-words">{e.name}</span>
                                   <span className="flex shrink-0 items-center gap-2">
-                                    <span className="text-neutral-500 tabular-nums">{formatTarget(e)}</span>
+                                    {(() => {
+                                      const t = targets?.get(e.id);
+                                      const up = t?.progress && (t.progress.change === "up" || t.progress.change === "level");
+                                      return (
+                                        <span title={t?.progress?.note ?? undefined} className={`tabular-nums ${up ? "font-semibold text-emerald-600 dark:text-emerald-400" : t?.progress?.change === "deload" ? "text-sky-600 dark:text-sky-400" : "text-neutral-500"}`}>
+                                          {up ? "↑ " : ""}
+                                          {formatTarget(t ?? e)}
+                                          {t?.weight && !e.weight ? ` · ${t.weight} ${t.weightUnit ?? "kg"}` : ""}
+                                        </span>
+                                      );
+                                    })()}
                                     {e.alternatives?.length > 0 && (
                                       <button type="button" onClick={() => setSwapFor(e)} aria-label={`Swap ${e.name}`} title="Swap" className="inline-flex shrink-0 items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
                                         <ArrowLeftRight className="h-3.5 w-3.5" />

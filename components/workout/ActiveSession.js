@@ -91,7 +91,10 @@ export default function ActiveSession() {
     if (saved) return saved;
     const prev = last?.[ex.name]?.sets?.[idx];
     const prevValue = prev ? (ex.type === "hold" ? prev.holdSec : prev.reps) : null;
-    return { value: String(prevValue ?? targetOf(ex) ?? ""), weight: String(prev?.weight ?? ex.weight ?? "") };
+    // Today's target already builds on last time (progressive overload), so start from it.
+    const value = ex.progress ? targetOf(ex) : (prevValue ?? targetOf(ex));
+    const weight = ex.progress?.change === "level" && ex.weight ? ex.weight : (prev?.weight ?? ex.weight);
+    return { value: String(value ?? ""), weight: String(weight ?? "") };
   }
   const setDraft = (ex, n, patch, idx) => setDrafts((d) => ({ ...d, [`${ex.exerciseId}:${n}`]: { ...draftFor(ex, n, idx), ...patch } }));
   const updateLayout = (ex, fn) => setLayout((l) => ({ ...l, [ex.exerciseId]: fn(l[ex.exerciseId] ?? { extra: 0, removed: [] }) }));
@@ -238,6 +241,7 @@ export default function ActiveSession() {
                     {ex.type === "hold" ? "s hold" : " reps"}
                     {ex.weight ? ` · ${ex.weight} ${ex.weightUnit}` : ""} · rest {formatDuration(ex.restSec)}
                   </p>
+                  {ex.progress && <ProgressBadge progress={ex.progress} />}
                   {ex.notes && <p className="mt-1.5 line-clamp-2 text-xs leading-snug text-neutral-500">{ex.notes}</p>}
                 </div>
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${complete ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800"}`}>
@@ -354,6 +358,24 @@ export default function ActiveSession() {
         />
       )}
     </div>
+  );
+}
+
+// What changed since last time (progressive overload), as a small coloured badge.
+const BADGE = {
+  up: ["bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", "↑"],
+  level: ["bg-amber-500/15 text-amber-700 dark:text-amber-300", "Level up:"],
+  hold: ["bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300", ""],
+  deload: ["bg-sky-500/10 text-sky-700 dark:text-sky-300", ""],
+  max: ["bg-violet-500/10 text-violet-700 dark:text-violet-300", ""],
+};
+function ProgressBadge({ progress }) {
+  const [tint, lead] = BADGE[progress.change] ?? BADGE.hold;
+  return (
+    <p className={`mt-1.5 inline-flex rounded-lg px-2 py-1 text-[11px] font-semibold ${tint}`}>
+      {lead ? <span className="mr-1">{lead}</span> : null}
+      {progress.note}
+    </p>
   );
 }
 
