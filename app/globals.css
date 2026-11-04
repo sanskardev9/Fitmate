@@ -242,3 +242,29 @@ html {
     padding-bottom: 17rem !important;
   }
 }
+
+/* Everything clickable shows the pointer (Tailwind v4 resets buttons to the default arrow). */
+@layer base {
+  button:not(:disabled),
+  [role="button"],
+  [role="switch"],
+  [role="tab"],
+  [role="option"],
+  [role="menuitem"],
+  a[href],
+  summary,
+  label:has(input[type="file"]),
+  label:has(input[type="checkbox"]),
+  label:has(input[type="radio"]),
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"],
+  input[type="range"],
+  select {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}

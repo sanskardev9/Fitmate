@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, X, Music2, Play } from "lucide-react";
+import { Search, X, Music2, Play, ArrowUpLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { closeMusic, playMusic, useMusic } from "@/lib/music";
 
@@ -32,6 +32,34 @@ export default function MusicPicker() {
   const [text, setText] = useState("");
   const [results, setResults] = useState(null);
   const [error, setError] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [typing, setTyping] = useState(false);
+
+  // Suggestions while typing (debounced; free, no search quota used).
+  useEffect(() => {
+    const q = text.trim();
+    if (!typing || q.length < 2) return setSuggestions([]);
+    let cancelled = false;
+    const t = setTimeout(() => {
+      fetch(`/api/music/suggest?q=${encodeURIComponent(q)}`)
+        .then((r) => r.json())
+        .then((j) => !cancelled && setSuggestions(j.suggestions ?? []))
+        .catch(() => {});
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [text, typing]);
+
+  const runSearch = (q) => {
+    const v = q.trim();
+    if (v.length < 2) return;
+    setText(v);
+    setActive(v);
+    setTyping(false);
+    setSuggestions([]);
+  };
 
   useEffect(() => {
     if (!picker) return;
@@ -59,7 +87,7 @@ export default function MusicPicker() {
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center" onClick={closeMusic}>
       <div role="dialog" aria-label="Workout music" onClick={(e) => e.stopPropagation()} className="animate-fade-up flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-3xl bg-[var(--background)] pb-[env(safe-area-inset-bottom)] shadow-2xl [animation-duration:220ms] sm:rounded-3xl">
-        <div className="flex items-center justify-between gap-3 px-5 pt-5">
+        <div className="flex shrink-0 items-center justify-between gap-3 px-5 pt-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-violet-600 text-white">
               <Music2 className="h-4 w-4" />
@@ -72,19 +100,49 @@ export default function MusicPicker() {
         </div>
 
         <form
-          className="px-5 pt-4"
+          className="shrink-0 px-5 pt-4"
           onSubmit={(e) => {
             e.preventDefault();
-            if (text.trim().length >= 2) setActive(text.trim());
+            runSearch(text);
           }}
         >
-          <label className="relative block">
-            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Search songs, artists, playlists" enterKeyHint="search" className="h-11 w-full rounded-xl border border-neutral-200 bg-white pr-3 pl-9 text-sm outline-none focus:border-fuchsia-500 dark:border-neutral-800 dark:bg-neutral-900" />
-          </label>
+          <div className="relative">
+            <label className="relative block">
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+              <input
+                value={text}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  setTyping(true);
+                }}
+                onBlur={() => setTimeout(() => setTyping(false), 150)}
+                placeholder="Search songs, artists, playlists"
+                enterKeyHint="search"
+                autoComplete="off"
+                className="h-11 w-full rounded-xl border border-neutral-200 bg-white pr-3 pl-9 text-sm outline-none focus:border-fuchsia-500 dark:border-neutral-800 dark:bg-neutral-900"
+              />
+            </label>
+            {typing && suggestions.length > 0 && (
+              <ul className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
+                {suggestions.map((sug) => (
+                  <li key={sug}>
+                    <div className="flex items-center">
+                      <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runSearch(sug)} className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                        <Search className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                        <span className="truncate">{sug}</span>
+                      </button>
+                      <button type="button" aria-label={`Edit "${sug}"`} onMouseDown={(e) => e.preventDefault()} onClick={() => setText(`${sug} `)} className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                        <ArrowUpLeft className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </form>
 
-        <div className="flex gap-2 overflow-x-auto px-5 pt-3 pb-1 [scrollbar-width:none]">
+        <div className="flex shrink-0 gap-2 overflow-x-auto px-5 pt-3 pb-2 [scrollbar-width:none]">
           {PICKS.map(([label, q]) => (
             <button key={label} type="button" onClick={() => { setActive(q); setText(""); }} className={`h-8 shrink-0 rounded-full border px-3 text-xs font-semibold transition-colors ${active === q ? "border-fuchsia-500 bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300" : "border-neutral-200 text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"}`}>
               {label}
@@ -92,7 +150,7 @@ export default function MusicPicker() {
           ))}
         </div>
 
-        <div className="mt-2 min-h-40 flex-1 overflow-y-auto px-3 pb-4">
+        <div className="mt-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
           {error && <p className="px-2 py-6 text-center text-sm text-neutral-500">{error}</p>}
           {!results && !error && (
             <ul className="space-y-2 px-2 pt-2">

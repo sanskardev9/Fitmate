@@ -14,6 +14,7 @@ import { AI_RULES, FENCE, compactJson, copyText } from "./PlanImport";
 import Segmented from "./Segmented";
 import { FOCUSES } from "@/lib/focuses";
 import { useScrollTopOn } from "@/lib/useScrollTop";
+import AiWaitHint from "./AiWaitHint";
 import AiLinks from "./AiLinks";
 
 // A few taps inside FitMate, then ONE prompt; the AI replies with the plan directly, no questions.
@@ -181,7 +182,7 @@ My choices:
 ${picked.length ? picked.map((x) => `- ${x}`).join("\n") : "- None, use sensible defaults"}
 
 Do NOT ask me any questions. Anything not given: choose sensible defaults.
-Reply format: start IMMEDIATELY with one short line (e.g. "Building your plan now…"), then exactly ONE ${FENCE}json code block with the whole plan, then nothing else. Do not think or plan out loud before the code block; write it straight away.
+Reply format: start IMMEDIATELY with exactly this line: "⏳ Building your plan. This takes about 2–3 minutes, keep this chat open. It's working.", then exactly ONE ${FENCE}json code block with the whole plan, then nothing else. Do not think or plan out loud before the code block; write it straight away.
 ${fit}
 - Keep it compact: one ${kind === "workout" ? "exercise" : "meal"} object per line, exactly like this example:
 ${FENCE}json
@@ -447,6 +448,9 @@ export default function AiCreate({ kinds, onImport, onBack }) {
 
       <div className="mt-6">
         <StepTitle n={3} text="Paste its reply here" />
+        <div className="mt-2">
+          <AiWaitHint />
+        </div>
         <textarea
           value={reply}
           onChange={(e) => {

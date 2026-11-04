@@ -15,6 +15,7 @@ import { saveDraft } from "@/lib/import/draft";
 import { extractJson } from "@/lib/import/extractJson";
 import Segmented from "./Segmented";
 import { useScrollTopOn } from "@/lib/useScrollTop";
+import AiWaitHint from "./AiWaitHint";
 import { useConfirm } from "./ConfirmDialog";
 
 const KINDS = [
@@ -184,7 +185,7 @@ const aiPrompt = (kind) =>
   `Convert my ${kind} plan into JSON for the FitMate app.
 
 How to reply:
-- Reply format: start IMMEDIATELY with one short line (e.g. "Converting your plan now…"), then exactly ONE ${FENCE}json code block with the whole plan, then nothing else. Do not think or plan out loud before the code block; write it straight away.
+- Reply format: start IMMEDIATELY with exactly this line: "⏳ Converting your plan. This takes about 1–3 minutes, keep this chat open. It's working.", then exactly ONE ${FENCE}json code block with the whole plan, then nothing else. Do not think or plan out loud before the code block; write it straight away.
 - Keep it compact: put each ${kind === "workout" ? "exercise" : "meal"} object on a single line, exactly like the example.
 
 Example of the exact structure:
@@ -386,6 +387,7 @@ function AiConvert({ kinds, onImport, onBack, onDirect }) {
 
         {/* 3. Paste reply */}
         <StepCard n={3} done={false} title="Paste the AI's reply" active={Boolean(source)}>
+          <AiWaitHint minutes="1–3" />
           <textarea value={reply} onChange={(e) => { setReply(e.target.value); setError(""); }} rows={4} placeholder="Paste the whole reply here…" className="w-full rounded-xl border border-neutral-300 bg-white p-3 font-mono text-xs outline-none focus:border-violet-500 dark:border-neutral-700 dark:bg-neutral-950" />
           {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
           <button type="button" disabled={!reply.trim()} onClick={submit} className="mt-2 w-full rounded-xl bg-neutral-900 py-3 text-sm font-semibold text-white disabled:opacity-40 dark:bg-white dark:text-neutral-900">
