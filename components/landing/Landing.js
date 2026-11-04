@@ -377,12 +377,12 @@ function StreakVisual() {
 
 function Matters() {
   return (
-    <section className="flex min-h-[100svh] flex-col justify-center px-5 py-20">
+    <section className="px-5 py-20">
       <div className="mx-auto max-w-4xl">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold tracking-wider text-emerald-600 uppercase">Why it matters</p>
           <h2 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Small days add up.</h2>
-          <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400">No plan changes you on paper. The change happens in the ordinary days you actually follow it.</p>
+          <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400">A plan on paper changes nothing. The days you follow it change everything.</p>
         </Reveal>
         <EffortCompare />
       </div>
@@ -406,12 +406,12 @@ function EffortCompare() {
     setDay(0);
     const t = setInterval(() => {
       if (d < TOTAL) setDay(++d);
-      else if (++hold > 40) {
+      else if (++hold > 120) {
         d = 0;
         hold = 0;
         setDay(0);
       }
-    }, 55);
+    }, 18);
     return () => clearInterval(t);
   }, [visible, TOTAL]);
 
@@ -419,7 +419,7 @@ function EffortCompare() {
   const week = Math.min(WEEKS, Math.max(1, Math.ceil(day / 7)));
 
   return (
-    <div ref={ref} className="mx-auto mt-14 max-w-xl rounded-3xl border border-neutral-200 bg-white p-6 sm:p-10 dark:border-neutral-800 dark:bg-neutral-900">
+    <div ref={ref} className="mx-auto mt-10 max-w-md rounded-3xl border border-neutral-200 bg-white p-5 sm:p-7 dark:border-neutral-800 dark:bg-neutral-900">
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm font-medium">Making the plan</p>
         <span className="flex items-center gap-2 text-sm text-neutral-500">
@@ -427,7 +427,7 @@ function EffortCompare() {
         </span>
       </div>
 
-      <div className="mt-6 flex items-center justify-between gap-4">
+      <div className="mt-4 flex items-center justify-between gap-4">
         <p className="text-sm font-medium">Following it</p>
         <span className="text-sm text-emerald-600 tabular-nums dark:text-emerald-400">
           {day ? `Day ${day} · Week ${week}` : "Day 1"}
@@ -436,14 +436,14 @@ function EffortCompare() {
 
       <div className="mt-3 flex justify-center">
         <div className="w-fit">
-        <div className="grid grid-flow-col grid-rows-7 gap-1.5 sm:gap-2" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1.25rem))` }}>
+        <div className="grid grid-flow-col grid-rows-7 gap-1" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 0.9rem))` }}>
           {Array.from({ length: TOTAL }, (_, i) => {
             const on = i < day;
             const last = i === TOTAL - 1 && done;
             return (
               <span
                 key={i}
-                className={`aspect-square w-full max-w-5 rounded-[4px] transition-all duration-200 ${on ? "bg-emerald-500" : "bg-neutral-200 dark:bg-neutral-800"} ${last ? "scale-125 shadow-lg shadow-emerald-500/40" : on && i === day - 1 ? "scale-110" : "scale-100"}`}
+                className={`aspect-square w-full rounded-[3px] transition-all duration-150 ${on ? "bg-emerald-500" : "bg-neutral-200 dark:bg-neutral-800"} ${last ? "scale-125 shadow-lg shadow-emerald-500/40" : on && i === day - 1 ? "scale-110" : "scale-100"}`}
               />
             );
           })}
@@ -455,7 +455,7 @@ function EffortCompare() {
         </div>
       </div>
 
-      <p className="mt-8 border-t border-neutral-200 pt-6 text-center text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
+      <p className="mt-5 border-t border-neutral-200 pt-4 text-center text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
         {done ? (
           <span className="animate-fade-up font-semibold text-neutral-900 dark:text-neutral-100">12 weeks. Every one of them counted.</span>
         ) : (
