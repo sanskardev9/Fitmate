@@ -183,10 +183,10 @@ export default function NotificationsCard() {
         <>
           <ul className="mt-3 divide-y divide-neutral-100 dark:divide-neutral-800">
             <li className="py-3">
-              <Row Icon={Sunrise} tint="text-amber-500" title="Morning plan" sub="8 am: your first meal and today's workout, so the day starts on track" checked={prefs.notify_morning} onChange={(v) => update({ notify_morning: v })} />
+              <Row Icon={Sunrise} tint="text-amber-500" title="Morning plan & check-ins" sub="8 am plan, then 11 am and 4 pm check-ins on what's left" checked={prefs.notify_morning} onChange={(v) => update({ notify_morning: v })} />
             </li>
             <li className="py-3">
-              <Row Icon={Dumbbell} tint="text-emerald-600" title="Workout reminder" sub="On days your plan has a workout" checked={prefs.notify_workout} onChange={(v) => update({ notify_workout: v })} />
+              <Row Icon={Dumbbell} tint="text-emerald-600" title="Workout reminder" sub="30 min before, at your time, and a follow-up if it isn't done" checked={prefs.notify_workout} onChange={(v) => update({ notify_workout: v })} />
               {prefs.notify_workout && (
                 <button type="button" onClick={() => setDialOpen(true)} className="mt-3 ml-8 flex items-center gap-3 rounded-xl border border-neutral-200 px-3 py-2 text-left transition-colors hover:border-emerald-500 hover:bg-emerald-500/5 dark:border-neutral-700">
                   <Clock className="h-5 w-5 text-emerald-600" />
@@ -199,10 +199,10 @@ export default function NotificationsCard() {
               )}
             </li>
             <li className="py-3">
-              <Row Icon={Utensils} tint="text-rose-500" title="Meal reminders" sub="A nudge when a meal from your plan isn't logged by its time" checked={prefs.notify_meals} onChange={(v) => update({ notify_meals: v })} />
+              <Row Icon={Utensils} tint="text-rose-500" title="Meal reminders" sub="At each meal's time, and again if it isn't logged" checked={prefs.notify_meals} onChange={(v) => update({ notify_meals: v })} />
             </li>
             <li className="py-3">
-              <Row Icon={Flame} tint="text-orange-500" title="Streak reminders" sub="8 pm and a last call at 10:30 pm, only if today isn't done yet" checked={prefs.notify_streak} onChange={(v) => update({ notify_streak: v })} />
+              <Row Icon={Flame} tint="text-orange-500" title="Streak reminders" sub="8 pm, 9:30 pm and 10:30 pm if today isn't done; a well done at 9 pm if it is" checked={prefs.notify_streak} onChange={(v) => update({ notify_streak: v })} />
             </li>
             <li className="py-3">
               <Row Icon={Timer} tint="text-sky-500" title="Rest timer alerts" sub="When rest ends and FitMate isn't on screen" checked={restOn} onChange={setRest} />
