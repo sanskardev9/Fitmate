@@ -192,7 +192,7 @@ export default function MusicPicker() {
           <ul>
             {results?.map((r, i) => (
               <li key={r.id}>
-                <button type="button" onClick={() => playMusic(results, i)} className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800/60 ${playingId === r.id ? "bg-fuchsia-500/10" : ""}`}>
+                <button type="button" onClick={() => (PICKS.some(([, q]) => q === active) ? playMusic(results, i) : playMusic([results[i]], 0, true))} className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800/60 ${playingId === r.id ? "bg-fuchsia-500/10" : ""}`}>
                   <span className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-neutral-200 dark:bg-neutral-800">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={`https://i.ytimg.com/vi/${r.id}/mqdefault.jpg`} alt="" className="h-full w-full object-cover" loading="lazy" />
