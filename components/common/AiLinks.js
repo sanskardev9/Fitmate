@@ -105,8 +105,8 @@ export default function AiLinks({ prompt, onCopied }) {
           <Check className="h-3.5 w-3.5" /> {note}
         </p>
       )}
-      <p className="mt-3 rounded-xl bg-neutral-100 px-3 py-2.5 text-xs leading-relaxed text-neutral-600 dark:bg-neutral-800/70 dark:text-neutral-300">
-        <b className="font-semibold">Tip:</b> if ChatGPT says <i>&ldquo;Thinking…&rdquo;</i> for a while, tap <b>Skip</b> (or pick the <b>Instant</b> model) and it starts writing right away.
+      <p className="mt-3 rounded-xl bg-amber-500/10 px-3 py-2.5 text-xs leading-relaxed text-amber-900 dark:text-amber-200">
+        <b className="font-semibold">Fastest:</b> in ChatGPT pick the <b>Instant</b> model (or tap <b>Skip</b> when it says <i>&ldquo;Thinking…&rdquo;</i>). Thinking mode can take 5+ minutes; Instant writes the whole plan in about 1–2.
       </p>
     </div>
   );

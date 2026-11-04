@@ -38,7 +38,7 @@ const QUESTIONS = {
     { id: "cuisine", q: "Food style", type: "one", options: ["Indian", "Continental", "Mixed"] },
     { id: "meals", q: "Meals a day", type: "one", options: ["3", "4", "5"] },
     { id: "cooking", q: "Cooking time per meal", type: "one", options: ["Under 15 min", "15–30 min", "Don't mind"] },
-    { id: "variety", q: "Meals across the week", hint: "Rotating 2–3 menus is about twice as fast to create, and every meal still has 3 swaps for daily variety.", type: "one", options: ["Rotate 2–3 menus", "Different every day", "Same every day"], defaultValue: "Rotate 2–3 menus" },
+    { id: "variety", q: "Meals across the week", hint: "Rotating 2–3 menus is about twice as fast to create, and every meal still has 2 swaps for daily variety.", type: "one", options: ["Rotate 2–3 menus", "Different every day", "Same every day"], defaultValue: "Rotate 2–3 menus" },
     { id: "skip", q: "Avoid", type: "many", options: ["Nothing", "Dairy", "Gluten", "Nuts", "Eggs"] },
     { id: "whey", q: "Protein powder (whey)", type: "one", options: ["I have it", "Don't use"], defaultValue: "Don't use" },
   ],
