@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { getRest, subscribeRest, remainingMs, adjustRest, togglePause, skipRest, markRestDone, restAlert } from "@/lib/workout/restTimer";
+import { getRest, subscribeRest, remainingMs, adjustRest, togglePause, skipRest, markRestDone, restAlert, restartRest } from "@/lib/workout/restTimer";
 import { formatDuration } from "@/lib/utils";
 
 const useRest = () => useSyncExternalStore(subscribeRest, getRest, () => null);
@@ -53,11 +53,12 @@ export default function RestTimerBar({ next }) {
   }
 
   const controls = (big) => (
-    <div className={`flex items-center ${big ? "gap-4" : "gap-2"}`}>
+    <div className={`flex shrink-0 items-center ${big ? "gap-4" : "gap-1"}`}>
       <RoundBtn big={big} onClick={() => adjustRest(-15)} label="−15" />
       <RoundBtn big={big} onClick={togglePause} label={paused ? "▶" : "❚❚"} aria={paused ? "Resume" : "Pause"} />
+      <RoundBtn big={big} onClick={restartRest} label="↺" aria="Restart timer" />
       <RoundBtn big={big} onClick={() => adjustRest(15)} label="+15" />
-      <button type="button" onClick={skipRest} className={`rounded-xl bg-white/10 font-semibold ${big ? "px-6 py-4 text-lg" : "px-3 py-2.5 text-sm"}`}>
+      <button type="button" onClick={skipRest} className={`rounded-xl bg-white/10 font-semibold ${big ? "px-6 py-4 text-lg" : "ml-0.5 px-2.5 py-2 text-xs"}`}>
         Skip
       </button>
     </div>
@@ -88,10 +89,10 @@ export default function RestTimerBar({ next }) {
       <div className="h-1 bg-neutral-800">
         <div className="h-full bg-emerald-500 transition-[width] duration-300" style={{ width: `${pct}%` }} />
       </div>
-      <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 px-4 py-3">
         <button type="button" onClick={() => setFull(true)} className="text-left" aria-label="Full screen timer">
           <span className="block text-[11px] tracking-wider text-neutral-400 uppercase">{paused ? "Paused" : "Rest"}</span>
-          <span className={`block text-3xl leading-none font-semibold tabular-nums ${paused ? "text-neutral-500" : ""}`}>{formatDuration(left / 1000)}</span>
+          <span className={`block text-2xl leading-none font-semibold tabular-nums sm:text-3xl ${paused ? "text-neutral-500" : ""}`}>{formatDuration(left / 1000)}</span>
         </button>
         {controls(false)}
       </div>
@@ -101,7 +102,7 @@ export default function RestTimerBar({ next }) {
 
 function RoundBtn({ onClick, label, aria, big }) {
   return (
-    <button type="button" onClick={onClick} aria-label={aria ?? label} className={`flex items-center justify-center rounded-full bg-white/10 font-semibold tabular-nums active:bg-white/20 ${big ? "h-16 w-16 text-lg" : "h-11 w-11 text-sm"}`}>
+    <button type="button" onClick={onClick} aria-label={aria ?? label} className={`flex items-center justify-center rounded-full bg-white/10 font-semibold tabular-nums active:bg-white/20 ${big ? "h-16 w-16 text-lg" : "h-9 w-9 text-xs"}`}>
       {label}
     </button>
   );

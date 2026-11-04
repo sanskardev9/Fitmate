@@ -10,15 +10,17 @@ import { getMealsForWeekday, getMealLogsForDate, sumNutrition } from "@/lib/serv
 import { todayKey } from "@/lib/utils";
 import PageHeader from "@/components/common/PageHeader";
 import { Nutrition } from "@/components/tracker/DailyTracker";
+import { dishName } from "@/lib/diet/dishName";
 
-async function loadHistory(planId, days = 14) {
+// Only real days: from the plan's start (or account start), plus any day with logged meals.
+async function loadHistory(planId, since, days = 14) {
   const out = [];
   for (let i = 1; i <= days; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const key = todayKey(d);
     const [meals, logs] = await Promise.all([getMealsForWeekday(planId, d.getDay()), getMealLogsForDate(key)]);
-    if (!meals.length && !logs.length) continue;
+    if (!logs.length && (!meals.length || (since && d.getTime() < since))) continue;
     out.push({ key, date: d, planned: meals.length, eaten: meals.filter((m) => logs.some((l) => l.mealId === m.id)).length, logs, totals: sumNutrition(logs) });
   }
   return out;
@@ -27,7 +29,9 @@ async function loadHistory(planId, days = 14) {
 async function load() {
   const daily = await loadDaily();
   const plan = daily.prefs.activeDietPlanId ? await db.dietPlans.get(daily.prefs.activeDietPlanId) : null;
-  return { daily, plan, history: await loadHistory(daily.prefs.activeDietPlanId) };
+  const start = plan?.createdAt ? new Date(plan.createdAt) : null;
+  start?.setHours(0, 0, 0, 0);
+  return { daily, plan, history: await loadHistory(daily.prefs.activeDietPlanId, start?.getTime() ?? Date.now()) };
 }
 
 // Diet tab: tick off today's meals, then look back at what you actually ate.
@@ -88,7 +92,7 @@ function HistoryDay({ day, proteinTarget }) {
           {day.logs.length === 0 && <li className="text-neutral-500">Nothing logged.</li>}
           {day.logs.map((l) => (
             <li key={l.id} className="flex justify-between gap-3">
-              <span className="min-w-0 break-words">{l.name}</span>
+              <span className="min-w-0 break-words">{dishName(l.name)}</span>
               <span className="shrink-0 text-neutral-500 tabular-nums">{Math.round(l.proteinG)} g</span>
             </li>
           ))}

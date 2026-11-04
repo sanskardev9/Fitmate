@@ -174,67 +174,103 @@ export default function ActiveSession() {
             {newSection && (
               <p className={`flex items-center gap-2 pt-2 text-xs font-semibold tracking-wide uppercase ${section === "main" ? "text-emerald-600 dark:text-emerald-400" : "text-sky-600 dark:text-sky-400"}`}>
                 {SECTION_LABEL[section]}
-                {section !== "main" && <span className="font-normal tracking-normal normal-case text-neutral-500">· not counted in your sets</span>}
                 <span className="h-px flex-1 bg-current opacity-20" />
               </p>
             )}
-            <section className={`overflow-hidden rounded-2xl border transition-colors ${section === "main" ? "bg-white dark:bg-neutral-900" : "bg-sky-500/5"} ${complete ? "border-emerald-500/50" : section === "main" ? "border-neutral-200 dark:border-neutral-800" : "border-sky-500/20"}`}>
-              <div className="flex items-start justify-between gap-3 px-4 pt-4">
-                <div className="min-w-0">
-                  <h2 className="font-semibold">{ex.name}</h2>
+            {section !== "main" ? (
+              // Warm-up / cool-down: one compact row, tap a chip per set.
+              <section className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${complete ? "border-emerald-500/40 bg-emerald-500/5" : "border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"}`}>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-medium break-words ${complete ? "text-neutral-400 line-through" : ""}`}>{ex.name}</p>
                   <p className="text-xs text-neutral-500">
                     {ex.sets} × {target ?? "–"}
-                    {ex.type === "hold" ? "s hold" : " reps"}
-                    {ex.weight ? ` @ ${ex.weight} ${ex.weightUnit}` : ""} · rest {formatDuration(ex.restSec)}
+                    {ex.type === "hold" ? "s" : " reps"}
                   </p>
-                  {ex.notes && <p className="mt-1 text-xs text-neutral-400 italic">{ex.notes}</p>}
+                </div>
+                <div className="flex shrink-0 gap-1.5">
+                  {rows.map((n, idx) => {
+                    const logged = done[n];
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-label={logged ? `Undo ${ex.name} set ${idx + 1}` : `Done ${ex.name} set ${idx + 1}`}
+                        onClick={() => (logged ? deleteSet(logged.id) : logRow(exIndex, n, idx))}
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-semibold transition-colors active:scale-95 ${logged ? "bg-emerald-500 text-white" : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800"}`}
+                      >
+                        {logged ? <Check className="h-5 w-5" strokeWidth={2.5} /> : idx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : (
+            <section className={`overflow-hidden rounded-2xl border bg-white transition-colors dark:bg-neutral-900 ${complete ? "border-emerald-500/50" : "border-neutral-200 dark:border-neutral-800"}`}>
+              <div className="flex items-start justify-between gap-3 px-4 pt-4">
+                <div className="min-w-0">
+                  <h2 className="font-semibold break-words">{ex.name}</h2>
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    {ex.sets} × {target ?? "–"}
+                    {ex.type === "hold" ? "s hold" : " reps"}
+                    {ex.weight ? ` · ${ex.weight} ${ex.weightUnit}` : ""} · rest {formatDuration(ex.restSec)}
+                  </p>
+                  {ex.notes && <p className="mt-1.5 line-clamp-2 text-xs leading-snug text-neutral-500">{ex.notes}</p>}
                 </div>
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${complete ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800"}`}>
                   {Object.keys(done).length}/{rows.length}
                 </span>
               </div>
 
-              <div className="mt-3 grid grid-cols-[2.75rem_1fr_4.5rem_4.5rem_3.25rem] items-center gap-2 px-3 pb-1 text-[11px] font-medium tracking-wide text-neutral-400 uppercase">
-                <span className="pl-1">Set</span>
-                <span>Last</span>
-                <span className="text-center">{holdLabel(ex)}</span>
-                <span className="text-center">{ex.weightUnit}</span>
-                <span />
-              </div>
-              <div className="space-y-1 px-1 pb-2">
-                {rows.map((n, idx) => {
-                  const logged = done[n];
-                  const prev = last?.[ex.name]?.sets?.[idx];
-                  const draft = draftFor(ex, n, idx);
-                  const isNext = next && next.ex.exerciseId === ex.exerciseId && next.n === n;
-                  return (
-                    <SetRow
-                      key={n}
-                      rowId={`${ex.exerciseId}:${n}`}
-                      label={idx + 1}
-                      ex={ex}
-                      prevText={prev ? `${ex.type === "hold" ? `${prev.holdSec}s` : prev.reps}${prev.weight ? ` × ${prev.weight}` : ""}` : "–"}
-                      draft={draft}
-                      logged={logged}
-                      isNext={isNext}
-                      onDraft={(patch) => setDraft(ex, n, patch, idx)}
-                      onLog={() => logRow(exIndex, n, idx)}
-                      onUndo={() => undoRow(logged, idx + 1)}
-                      onTime={() => setTiming({ exIndex, n, idx })}
-                      onRemove={rows.length > 1 ? () => updateLayout(ex, (l) => ({ ...l, removed: [...l.removed, n] })) : null}
-                    />
-                  );
-                })}
-              </div>
-              <div className="grid grid-cols-2 border-t border-neutral-100 text-sm font-medium dark:border-neutral-800">
-                <button type="button" disabled={!lastOpen || rows.length <= 1} onClick={() => updateLayout(ex, (l) => ({ ...l, removed: [...l.removed, lastOpen] }))} className="flex items-center justify-center gap-1.5 border-r border-neutral-100 py-3 text-neutral-500 disabled:opacity-30 dark:border-neutral-800">
-                  <Minus className="h-4 w-4" /> Remove set
+              {(() => {
+                // Weight column only for weighted work (planned weight or weight used before).
+                const weighted = Boolean(ex.weight) || (last?.[ex.name]?.sets ?? []).some((x) => x.weight);
+                const cols = weighted ? "grid-cols-[2.25rem_1fr_1fr_3rem]" : "grid-cols-[2.25rem_1fr_3rem]";
+                return (
+                  <>
+                    <div className={`mt-3 grid ${cols} items-center gap-2 px-3 pb-1 text-[11px] font-medium tracking-wide text-neutral-400 uppercase`}>
+                      <span className="pl-1">Set</span>
+                      <span className="text-center">{holdLabel(ex)}</span>
+                      {weighted && <span className="text-center">{ex.weightUnit}</span>}
+                      <span />
+                    </div>
+                    <div className="space-y-1 px-1 pb-2">
+                      {rows.map((n, idx) => {
+                        const logged = done[n];
+                        const draft = draftFor(ex, n, idx);
+                        const isNext = next && next.ex.exerciseId === ex.exerciseId && next.n === n;
+                        return (
+                          <SetRow
+                            key={n}
+                            rowId={`${ex.exerciseId}:${n}`}
+                            label={idx + 1}
+                            ex={ex}
+                            cols={cols}
+                            weighted={weighted}
+                            draft={draft}
+                            logged={logged}
+                            isNext={isNext}
+                            onDraft={(patch) => setDraft(ex, n, patch, idx)}
+                            onLog={() => logRow(exIndex, n, idx)}
+                            onUndo={() => undoRow(logged, idx + 1)}
+                            onTime={() => setTiming({ exIndex, n, idx })}
+                            onRemove={rows.length > 1 ? () => updateLayout(ex, (l) => ({ ...l, removed: [...l.removed, n] })) : null}
+                          />
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
+              <div className="flex justify-end gap-1 border-t border-neutral-100 px-2 py-1.5 text-xs font-medium dark:border-neutral-800">
+                <button type="button" disabled={!lastOpen || rows.length <= 1} onClick={() => updateLayout(ex, (l) => ({ ...l, removed: [...l.removed, lastOpen] }))} className="flex items-center gap-1 rounded-lg px-3 py-2 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 dark:hover:bg-neutral-800">
+                  <Minus className="h-3.5 w-3.5" /> Set
                 </button>
-                <button type="button" onClick={() => updateLayout(ex, (l) => ({ ...l, extra: l.extra + 1 }))} className="flex items-center justify-center gap-1.5 py-3 text-emerald-600 dark:text-emerald-400">
-                  <Plus className="h-4 w-4" /> Add set
+                <button type="button" onClick={() => updateLayout(ex, (l) => ({ ...l, extra: l.extra + 1 }))} className="flex items-center gap-1 rounded-lg px-3 py-2 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400">
+                  <Plus className="h-3.5 w-3.5" /> Set
                 </button>
               </div>
             </section>
+            )}
             </Fragment>
           );
         })}
@@ -264,7 +300,7 @@ export default function ActiveSession() {
       {finishing && (
         <FinishSheet
           session={session}
-          sets={sets}
+          sets={sets.filter((x) => mainIds.has(x.exerciseId))}
           planned={planned}
           onClose={() => setFinishing(false)}
           onSave={async (values) => {
@@ -312,60 +348,45 @@ function NextSetBar({ next, draft, onLog, onFinish }) {
   );
 }
 
-function SetRow({ rowId, label, ex, prevText, draft, logged, isNext, onDraft, onLog, onUndo, onTime, onRemove }) {
+function SetRow({ rowId, label, ex, cols, weighted, draft, logged, isNext, onDraft, onLog, onUndo, onTime, onRemove }) {
   const value = logged ? String((ex.type === "hold" ? logged.holdSec : logged.reps) ?? "") : draft.value;
   const weight = logged ? String(logged.weight ?? "") : draft.weight;
-  const field = "h-12 w-full rounded-xl text-center text-base font-semibold tabular-nums outline-none focus:ring-2 focus:ring-emerald-500";
+  const field = "h-12 w-full rounded-xl text-center text-base font-semibold tabular-nums outline-none focus:ring-2 focus:ring-emerald-500 bg-neutral-100 disabled:bg-transparent dark:bg-neutral-800 dark:disabled:bg-transparent";
 
   return (
     <div
       data-row={rowId}
-      className={`grid scroll-mt-28 grid-cols-[2.75rem_1fr_4.5rem_4.5rem_3.25rem] items-center gap-2 rounded-xl px-2 py-1.5 transition-colors ${
+      className={`grid scroll-mt-28 ${cols} items-center gap-2 rounded-xl px-2 py-1.5 transition-colors ${
         logged ? "bg-emerald-500/10" : isNext ? "bg-emerald-500/5 ring-1 ring-emerald-500/40" : ""
       }`}
     >
-      <span className="flex items-center gap-0.5">
-        <span className={`w-4 text-sm font-semibold tabular-nums ${isNext ? "text-emerald-600" : "text-neutral-500"}`}>{label}</span>
-        {!logged && onRemove && (
-          <button type="button" onClick={onRemove} aria-label={`Remove set ${label}`} className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-500/10 hover:text-red-500">
-            <X className="h-3.5 w-3.5" />
+      <span className="flex items-center">
+        {!logged && onRemove ? (
+          <button type="button" onClick={onRemove} aria-label={`Remove set ${label}`} className="group flex h-8 w-8 items-center justify-center rounded-lg text-sm font-semibold tabular-nums hover:bg-red-500/10">
+            <span className={`group-hover:hidden ${isNext ? "text-emerald-600" : "text-neutral-500"}`}>{label}</span>
+            <X className="hidden h-4 w-4 text-red-500 group-hover:block" />
           </button>
+        ) : (
+          <span className={`w-8 text-center text-sm font-semibold tabular-nums ${logged ? "text-emerald-600" : "text-neutral-500"}`}>{label}</span>
         )}
       </span>
-      <span className="truncate text-sm text-neutral-400 tabular-nums">{prevText}</span>
       <div className="relative">
-        <input
-          type="number"
-          inputMode="numeric"
-          min="0"
-          value={value}
-          disabled={Boolean(logged)}
-          onChange={(e) => onDraft({ value: e.target.value })}
-          className={`${field} bg-neutral-100 disabled:bg-transparent dark:bg-neutral-800 dark:disabled:bg-transparent`}
-        />
+        <input type="number" inputMode="numeric" min="0" value={value} disabled={Boolean(logged)} onChange={(e) => onDraft({ value: e.target.value })} aria-label={`Set ${label} ${holdLabel(ex)}`} className={field} />
         {ex.type === "hold" && !logged && (
-          <button type="button" onClick={onTime} aria-label={`Time set ${label}`} className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow">
-            <Play className="h-3 w-3 fill-current" />
+          <button type="button" onClick={onTime} aria-label={`Time set ${label}`} className="absolute top-1/2 right-1.5 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-emerald-600 text-white">
+            <Play className="h-3.5 w-3.5 fill-current" />
           </button>
         )}
       </div>
-      <input
-        type="number"
-        inputMode="decimal"
-        min="0"
-        step="0.5"
-        placeholder="–"
-        value={weight}
-        disabled={Boolean(logged)}
-        onChange={(e) => onDraft({ weight: e.target.value })}
-        className={`${field} bg-neutral-100 disabled:bg-transparent dark:bg-neutral-800 dark:disabled:bg-transparent`}
-      />
+      {weighted && (
+        <input type="number" inputMode="decimal" min="0" step="0.5" placeholder="–" value={weight} disabled={Boolean(logged)} onChange={(e) => onDraft({ weight: e.target.value })} aria-label={`Set ${label} weight`} className={field} />
+      )}
       <button
         type="button"
         aria-label={logged ? `Undo set ${label}` : `Log set ${label}`}
         onClick={logged ? onUndo : onLog}
-        className={`flex h-12 w-12 items-center justify-center justify-self-end rounded-xl transition-colors ${
-          logged ? "bg-emerald-500 text-white" : isNext ? "bg-emerald-600/15 text-emerald-600 ring-1 ring-emerald-500/50" : "bg-neutral-100 text-neutral-400 dark:bg-neutral-800"
+        className={`flex h-12 w-12 items-center justify-center justify-self-end rounded-xl transition-colors active:scale-95 ${
+          logged ? "bg-emerald-500 text-white" : isNext ? "bg-emerald-600 text-white" : "bg-neutral-100 text-neutral-400 dark:bg-neutral-800"
         }`}
       >
         <Check className="h-6 w-6" strokeWidth={2.5} />

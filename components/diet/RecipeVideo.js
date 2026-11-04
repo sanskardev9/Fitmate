@@ -6,7 +6,7 @@ import { youtubeId, youtubeSearchUrl } from "@/lib/youtube";
 
 // Recipe video: the plan's own link if it has one, otherwise FitMate finds one (server, cached per dish).
 // Shows a thumbnail first (no data used) and plays inline on tap. Nothing found -> a YouTube search link.
-export default function RecipeVideo({ url, dish }) {
+export default function RecipeVideo({ url, dish, search }) {
   const own = youtubeId(url);
   const [found, setFound] = useState(own ? { id: own } : null); // null = looking, {id:null} = none
   const [playing, setPlaying] = useState(false);
@@ -15,20 +15,20 @@ export default function RecipeVideo({ url, dish }) {
     if (own) return setFound({ id: own });
     let cancelled = false;
     setFound(null);
-    fetch(`/api/recipe-video?dish=${encodeURIComponent(dish)}`)
+    fetch(`/api/recipe-video?v=3&dish=${encodeURIComponent(dish)}${search ? `&q=${encodeURIComponent(search)}` : ""}`)
       .then((r) => r.json())
       .then((j) => !cancelled && setFound({ id: j.videoId ?? null }))
       .catch(() => !cancelled && setFound({ id: null }));
     return () => {
       cancelled = true;
     };
-  }, [own, dish]);
+  }, [own, dish, search]);
 
   if (!found) return <div className="aspect-video w-full animate-pulse rounded-xl bg-neutral-200 dark:bg-neutral-800" />;
 
   if (!found.id) {
     return (
-      <a href={youtubeSearchUrl(dish)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400">
+      <a href={youtubeSearchUrl(search || dish)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400">
         <Search className="h-3.5 w-3.5" /> Find recipe videos
       </a>
     );

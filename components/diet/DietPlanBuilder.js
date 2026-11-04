@@ -10,6 +10,7 @@ import { uid } from "@/lib/utils";
 import Card from "@/components/common/Card";
 import UnitMenu from "@/components/common/UnitMenu";
 import RecipeVideo from "./RecipeVideo";
+import { contributeDishes } from "@/lib/services/dishCatalog";
 import { youtubeId, checkVideos } from "@/lib/youtube";
 import { DayTabs, DayPager } from "@/components/common/DayTabs";
 import { Trash2 } from "lucide-react";
@@ -81,6 +82,15 @@ export default function DietPlanBuilder({ header }) {
   }, []);
   const [videoNote, setVideoNote] = useState(null);
 
+  // Variety check per slot (meals + alternatives), using the plan's own categories.
+  const varietyIssues = (() => {
+    const bySlot = {};
+    for (const d of days)
+      for (const m of d.meals) for (const x of [m, ...(m.alternatives ?? [])]) if (x.category) (bySlot[m.slot] ??= new Set()).add(String(x.category).toLowerCase());
+    return Object.entries(bySlot)
+      .filter(([, cats]) => cats.size < 3)
+      .map(([slot, cats]) => `${slot} has only ${cats.size} type${cats.size === 1 ? "" : "s"} of dish (${[...cats].join(", ")})`);
+  })();
   const flagCount = days.reduce((n, d) => n + d.meals.filter((m) => m.flags.length).length, 0);
 
   const updateDay = (key, changes) => setDays((ds) => ds.map((d) => (d.key === key ? { ...d, ...changes } : d)));
@@ -115,10 +125,15 @@ export default function DietPlanBuilder({ header }) {
           recipe: m.recipe.trim(),
           videoUrl: youtubeId(m.videoUrl) ? m.videoUrl.trim() : "",
           alternatives: m.alternatives ?? [],
+          category: m.category ?? "",
+          diet: m.diet ?? "",
+          videoSearch: m.videoSearch ?? "",
+          timing: m.timing ?? "",
         })),
       })),
     });
     await setPreference("activeDietPlanId", plan.id);
+    contributeDishes(cleaned);
     const back = new URLSearchParams(window.location.search).get("return");
     router.push(back?.startsWith("/") ? back : "/home");
   }
@@ -136,6 +151,11 @@ export default function DietPlanBuilder({ header }) {
               ? `${flagCount} meal${flagCount > 1 ? "s have" : " has"} missing or estimated macros, outlined in amber. Editing a value marks it as checked.`
               : "Everything was read clearly. Give it a quick look anyway."}
           </p>
+          {varietyIssues.length > 0 && (
+            <p className="mt-2 font-medium text-amber-900 dark:text-amber-200">
+              Not much to swap: {varietyIssues.join("; ")}. Ask the AI to spread each meal across more dish types, then import again.
+            </p>
+          )}
           {videoNote && (
             <p className="mt-1 text-amber-900/80 dark:text-amber-200/80">
               Recipe videos: {videoNote.kept} checked and kept{videoNote.dropped ? `, ${videoNote.dropped} broken link${videoNote.dropped > 1 ? "s" : ""} removed (those meals get a YouTube search instead)` : ""}.

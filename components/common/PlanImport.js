@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Sparkles, Upload, PencilLine, ChevronRight, ChevronLeft, Copy, Check, WandSparkles } from "lucide-react";
 import AiCreate from "./AiCreate";
+import AiLinks from "./AiLinks";
+import { DISH_CATEGORIES } from "@/lib/diet/categories";
 import { extractPdfLines } from "@/lib/import/pdfText";
 import { detectKind, parseWorkout, parseDiet } from "@/lib/import/parsePlan";
 import { parsePlanJson, downloadJson, WORKOUT_TEMPLATE, DIET_TEMPLATE } from "@/lib/import/parseJson";
@@ -199,12 +201,17 @@ export const AI_RULES = {
     '"section": "warmup" for warm-up/prep items (mobility, activation, light sets), "cooldown" for stretches at the end. Leave "section" out for main work. Keep warm-up items first and cool-down items last.',
   ],
   diet: [
-    'One entry in "days" per day of the plan. If every day is the same, use one day with all seven weekdays.',
-    '"slot" is one of Breakfast, Lunch, Snack, Dinner.',
-    'Numbers only: "calories" in kcal, "proteinG", "carbsG", "fatG" in grams. If the plan does not give them, estimate them from the ingredients.',
-    'Put ingredients and preparation steps in "recipe".',
-    '"alternatives": 2 easy swap meals for the same slot with similar calories and protein (within ~10%), each {"name","serving","calories","proteinG","carbsG","fatG","recipe"}.',
-    '"videoUrl": if you can search the web, look up a real YouTube video showing how to cook that exact dish (short, popular, simple) and add its link. Without web search, leave "videoUrl" out (FitMate finds a video itself). Never invent video IDs.',
+    'DAYS: one entry in "days" per day of the plan, with its "weekdays". If every day is the same, use one day with all seven weekdays.',
+    'SLOTS: "slot" is exactly one of Breakfast, Lunch, Snack, Dinner.',
+    'NUMBERS: "calories" (kcal), "proteinG", "carbsG", "fatG" (grams) are plain numbers on every meal and every alternative. Estimate from ingredients if needed.',
+    'RECIPE: "recipe" = "Prep: X min" on line 1, then "Ingredients: item qty, item qty", then at most 4 numbered short steps.',
+    `CATEGORY (required on every meal AND every alternative): exactly one of ${DISH_CATEGORIES.join(", ")}. Decide by the main dish: "Besan chilla with curd" = Chilla & dosa, "Soya pulao" = Rice, "Sattu shake with toast" = Shake & smoothie.`,
+    'DIET (required on every meal AND every alternative): "veg", "egg", "nonveg" or "vegan" = what that dish contains.',
+    'ALTERNATIVES: every meal has EXACTLY 3 "alternatives". Each alternative is a DIFFERENT category from the main meal AND from the other two alternatives (main = Chilla & dosa -> alternatives e.g. Oats, Poha & upma, Sandwich & toast). Protein and calories within 10% of the main meal. Each alternative has the same fields as a meal: "name","category","diet","serving","calories","proteinG","carbsG","fatG","recipe".',
+    'VARIETY (per slot, counting all meals + alternatives in the week): at least 4 different categories, EVERY category used has at least 3 dishes (if one would have only 1-2, add more of it or replace them), and no category above 40% of that slot. Never make every breakfast (or every lunch, every dinner) the same kind of dish.',
+    'VIDEO SEARCH (required on every meal AND every alternative): "videoSearch" = 2-5 words naming the MAIN dish to cook, the way people search YouTube for its recipe (e.g. "dal paneer tadka", "soya poha", "besan paneer chilla", "masala oats"). Leave out sides (roti, rice, curd, salad) and words like post-workout or high protein.',
+    'VIDEO: "videoUrl" only if you can search the web and found a real YouTube recipe for that exact dish; otherwise leave it out (FitMate finds one). Never invent video IDs.',
+    'CHECK SILENTLY BEFORE REPLYING (do not write the check): per slot, every category has 3+ dishes and there are 4+ categories; every meal has 3 alternatives in 3 other categories; every dish has "category" and "diet"; no dish uses ingredients I avoid; protein per meal and per day hits the target. Fix anything that fails. Your reply is still ONLY the code block.',
   ],
 };
 
@@ -290,6 +297,7 @@ function AiConvert({ kinds, onImport, onBack }) {
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         {copied ? "Prompt copied" : "Copy prompt"}
       </button>
+      <AiLinks prompt={prompt} onCopied={() => setCopied(true)} />
 
       <div className="mt-5">
         <Step n={2} text="Tap Copy on the AI's code block and paste it here." />

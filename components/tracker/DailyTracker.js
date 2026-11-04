@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db/dexie";
 import { setPreference } from "@/lib/services/preferencesService";
-import { logMeal, unlogMeal } from "@/lib/services/dietService";
+import { logMeal, unlogMeal, removeExtraFood, addMealAddon, removeMealAddon } from "@/lib/services/dietService";
 import { loadDaily, buildInsights } from "@/lib/services/insights";
 import { uid, now, WEEKDAYS } from "@/lib/utils";
 import TargetsForm from "@/components/targets/TargetsForm";
 import EndWorkoutButton from "@/components/workout/EndWorkoutButton";
 import FinishedActions from "@/components/workout/FinishedActions";
 import RecipeVideo from "@/components/diet/RecipeVideo";
+import { Repeat2, Plus, Trash2, X } from "lucide-react";
+import AddFoodSheet from "@/components/diet/AddFoodSheet";
 import MealSwap from "@/components/diet/MealSwap";
+import { dishName, mealTiming } from "@/lib/diet/dishName";
 
 const ICONS = {
   dumbbell: "M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11",
@@ -238,6 +241,12 @@ const Legend = ({ className, label }) => (
 export function Nutrition({ data, title = "Today's meals" }) {
   const { today, eaten, targets, prefs } = data;
   const [open, setOpen] = useState(null);
+  const [swapFor, setSwapFor] = useState(null);
+  const [addingFood, setAddingFood] = useState(false);
+  const [addonFor, setAddonFor] = useState(null);
+  const closeAddon = useCallback(() => setAddonFor(null), []);
+  const closeAddFood = useCallback(() => setAddingFood(false), []);
+  const closeSwap = useCallback(() => setSwapFor(null), []);
   const [calc, setCalc] = useState(false);
   const custom = prefs.proteinTargetG != null || prefs.caloriesTarget != null;
 
@@ -247,13 +256,16 @@ export function Nutrition({ data, title = "Today's meals" }) {
     ["Carbs", eaten.carbsG, targets.carbsG, "g", "bg-sky-500"],
     ["Fat", eaten.fatG, targets.fatG, "g", "bg-rose-500"],
   ].filter(([label, , goal]) => goal > 0 || label === "Protein");
+  // Protein and calories are what matter day to day; carbs and fat stay as a small line.
+  const mainBars = bars.filter(([l]) => l === "Protein" || l === "Calories");
+  const minor = bars.filter(([l]) => l === "Carbs" || l === "Fat");
 
   return (
     <section className={card}>
       <Heading icon="leaf" title={title} sub={today.meals.length ? `${today.eatenPlanned}/${today.meals.length} meals eaten` : "No meals planned today"} />
 
       <div className="mt-5 space-y-3">
-        {bars.map(([label, value, goal, unit, color]) => {
+        {mainBars.map(([label, value, goal, unit, color]) => {
           const pct = goal ? Math.min(100, Math.round((value / goal) * 100)) : 0;
           const left = goal ? Math.max(0, Math.round(goal - value)) : null;
           return (
@@ -272,6 +284,15 @@ export function Nutrition({ data, title = "Today's meals" }) {
           );
         })}
       </div>
+      {minor.length > 0 && (
+        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 tabular-nums">
+          {minor.map(([label, value, goal, unit]) => (
+            <span key={label}>
+              {label} <b className="font-semibold text-neutral-700 dark:text-neutral-300">{Math.round(value)}</b>/{Math.round(goal)} {unit}
+            </span>
+          ))}
+        </p>
+      )}
 
       {today.meals.length > 0 && today.eatenPlanned === 0 && <p className="mt-5 -mb-2 text-xs text-neutral-500">Tap ✓ when you eat a meal. Tap a meal to see its recipe and video.</p>}
       {today.meals.length > 0 && (
@@ -279,7 +300,8 @@ export function Nutrition({ data, title = "Today's meals" }) {
           {today.meals.map((m) => {
             const eatenLog = today.logs.find((l) => l.mealId === m.id);
             const done = Boolean(eatenLog);
-            const swapped = eatenLog && eatenLog.name !== m.name ? eatenLog : null;
+            const choice = data.swaps?.[m.id] ? { ...m, ...data.swaps[m.id], id: m.id } : m;
+            const swapped = choice !== m ? choice : null;
             const expanded = open === m.id;
             return (
               <li key={m.id} className="py-3">
@@ -287,17 +309,48 @@ export function Nutrition({ data, title = "Today's meals" }) {
                   <button
                     type="button"
                     aria-label={done ? `Mark ${m.name} as not eaten` : `Mark ${m.name} as eaten`}
-                    onClick={() => (done ? unlogMeal(m.id, today.key) : logMeal(m, today.key))}
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors active:scale-95 ${done ? "bg-emerald-500 text-white" : "border-2 border-neutral-300 text-neutral-300 hover:border-emerald-500 hover:text-emerald-500 dark:border-neutral-700 dark:text-neutral-700"}`}
+                    onClick={() => (done ? unlogMeal(m.id, today.key) : logMeal(choice, today.key))}
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl outline-none transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500/60 active:scale-95 ${done ? "bg-emerald-500 text-white" : "border-2 border-neutral-300 text-neutral-300 hover:border-emerald-500 hover:text-emerald-500 dark:border-neutral-700 dark:text-neutral-700"}`}
                   >
                     <Icon name="check" className="h-5 w-5" />
                   </button>
                   <button type="button" onClick={() => setOpen(expanded ? null : m.id)} className="min-w-0 flex-1 text-left">
-                    <span className="block text-[11px] font-medium tracking-wide text-neutral-500 uppercase">{m.slot}</span>
-                    <span className={`block text-sm font-medium break-words ${done ? "text-neutral-400 line-through" : ""}`}>{swapped ? swapped.name : m.name}</span>
-                    {swapped && <span className="block text-[11px] text-emerald-600 dark:text-emerald-400">Swapped from {m.name}</span>}
+                    <span className="block text-[11px] font-medium tracking-wide text-neutral-500 uppercase">
+                      {m.slot}
+                      {mealTiming(m) ? <span> · {mealTiming(m)}</span> : null}
+                      {(swapped ?? m).proteinG ? <span className="tracking-normal normal-case"> · {Math.round((swapped ?? m).proteinG)} g protein</span> : null}
+                    </span>
+                    <span className={`block text-sm font-medium break-words ${done ? "text-neutral-400 line-through" : ""}`}>{dishName(swapped ? swapped.name : m.name)}</span>
+                    {eatenLog?.addons?.length > 0 && (
+                      <span className="mt-1 flex flex-wrap gap-1">
+                        {eatenLog.addons.map((a) => (
+                          <span key={a.id} className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 py-0.5 pr-1 pl-2 text-[11px] font-medium text-sky-700 dark:text-sky-300">
+                            + {a.name} · {Math.round(a.proteinG)} g
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Remove ${a.name}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeMealAddon(eatenLog.id, a.id);
+                              }}
+                              className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-sky-500/20"
+                            >
+                              <X className="h-3 w-3" />
+                            </span>
+                          </span>
+                        ))}
+                      </span>
+                    )}
                   </button>
-                  <span className="shrink-0 text-xs text-neutral-500 tabular-nums">{(swapped ?? m).proteinG ? `${Math.round((swapped ?? m).proteinG)} g` : ""}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSwapFor(m.id)}
+                    aria-label={`Swap ${(swapped ?? m).name}`}
+                    className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors active:scale-95 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-white`}
+                  >
+                    <Repeat2 className="h-3.5 w-3.5" /> Swap
+                  </button>
                   {(m.recipe || m.name) && (
                     <button type="button" onClick={() => setOpen(expanded ? null : m.id)} aria-label="Show recipe" className={`shrink-0 text-neutral-400 transition-transform ${expanded ? "rotate-180" : ""}`}>
                       ⌄
@@ -306,21 +359,71 @@ export function Nutrition({ data, title = "Today's meals" }) {
                 </div>
                 {expanded && (
                   <div className="animate-fade-up mt-3 space-y-2 sm:ml-14">
-                    {m.recipe && <p className="rounded-xl bg-neutral-50 p-3 text-xs leading-relaxed whitespace-pre-line text-neutral-600 dark:bg-neutral-950 dark:text-neutral-400">{m.recipe}</p>}
-                    <RecipeVideo url={m.videoUrl} dish={m.name} />
-                    <MealSwap meal={m} dateKey={today.key} eatenLog={eatenLog} />
+                    <button
+                      type="button"
+                      onClick={() => setAddonFor(choice)}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 py-2.5 text-sm font-semibold text-neutral-600 hover:border-emerald-500 hover:text-emerald-700 dark:border-neutral-700 dark:text-neutral-300 dark:hover:text-emerald-400"
+                    >
+                      <Plus className="h-4 w-4" /> Add to this meal
+                    </button>
+                    {/* After a swap, show the recipe + video of what you actually chose. */}
+                    {(swapped ? swapped.recipe : m.recipe) && <p className="rounded-xl bg-neutral-50 p-3 text-xs leading-relaxed whitespace-pre-line text-neutral-600 dark:bg-neutral-950 dark:text-neutral-400">{swapped ? swapped.recipe : m.recipe}</p>}
+                    <RecipeVideo key={swapped ? swapped.name : m.name} url={swapped ? swapped.videoUrl : m.videoUrl} dish={swapped ? swapped.name : m.name} search={(swapped ?? m).videoSearch} />
                   </div>
                 )}
+                {swapFor === m.id && <MealSwap meal={m} dateKey={today.key} chosen={swapped} onClose={closeSwap} />}
               </li>
             );
           })}
         </ul>
       )}
 
+      {today.logs.some((l) => l.extra) && (
+        <ul className="mt-2 divide-y divide-neutral-100 dark:divide-neutral-800">
+          {today.logs
+            .filter((l) => l.extra)
+            .map((l) => (
+              <li key={l.id} className="flex items-center gap-3 py-2.5">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                  <Plus className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-medium tracking-wide text-neutral-500 uppercase">
+                    Extra · {Math.round(l.proteinG)} g protein · {Math.round(l.calories)} kcal
+                  </span>
+                  <span className="block text-sm font-medium break-words">
+                    {dishName(l.name)}
+                    {l.serving ? <span className="font-normal text-neutral-500"> · {l.serving}</span> : null}
+                  </span>
+                </span>
+                <button type="button" onClick={() => removeExtraFood(l.id)} aria-label={`Remove ${l.name}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-500/10 hover:text-red-500">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+        </ul>
+      )}
+      <button
+        type="button"
+        onClick={() => setAddingFood(true)}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 py-3 text-sm font-semibold text-neutral-600 hover:border-emerald-500 hover:text-emerald-700 dark:border-neutral-700 dark:text-neutral-300 dark:hover:text-emerald-400"
+      >
+        <Plus className="h-4 w-4" /> Add something you ate
+      </button>
+      {addingFood && <AddFoodSheet dateKey={today.key} onClose={closeAddFood} />}
+      {addonFor && (
+        <AddFoodSheet
+          dateKey={today.key}
+          onClose={closeAddon}
+          title={`Add to ${addonFor.slot.toLowerCase()}`}
+          subtitle={`Had something with ${addonFor.name}? It's added to this meal's totals.`}
+          onSubmit={(item) => addMealAddon(today.key, addonFor, item)}
+        />
+      )}
+
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-        <span className="text-neutral-500">{custom ? "Targets: your calculated numbers." : "Targets: from your diet plan."}</span>
         <button type="button" onClick={() => setCalc((v) => !v)} className="font-medium text-emerald-600 dark:text-emerald-400">
-          {calc ? "Close" : "Calculate my targets"}
+          {calc ? "Close" : "Adjust targets"}
         </button>
         {custom && (
           <button

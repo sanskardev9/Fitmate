@@ -11,6 +11,7 @@ import { extractJson } from "@/lib/import/extractJson";
 import { WORKOUT_TEMPLATE, DIET_TEMPLATE } from "@/lib/import/parseJson";
 import { AI_RULES, FENCE, compactJson, copyText } from "./PlanImport";
 import Segmented from "./Segmented";
+import AiLinks from "./AiLinks";
 
 // A few taps inside FitMate, then ONE prompt; the AI replies with the plan directly, no questions.
 // Everything is optional: whatever is left blank, the AI picks a sensible default.
@@ -34,6 +35,7 @@ const QUESTIONS = {
     { id: "cooking", q: "Cooking time per meal", type: "one", options: ["Under 15 min", "15–30 min", "Don't mind"] },
     { id: "variety", q: "Meals across the week", type: "one", options: ["Different every day", "Rotate 2–3 menus", "Same every day"] },
     { id: "skip", q: "Avoid", type: "many", options: ["Nothing", "Dairy", "Gluten", "Nuts", "Eggs"] },
+    { id: "whey", q: "Protein powder (whey)", type: "one", options: ["I have it", "Don't use"], defaultValue: "Don't use" },
   ],
 };
 
@@ -97,7 +99,14 @@ async function loadTraining() {
   return { name: plan.name, lines: out.map((o) => o.line), rest };
 }
 
-function buildPrompt(kind, profile, answers, extra, others = {}, training = null) {
+// Protein each main meal should carry: daily target / meals per day (rounded).
+function proteinPerMeal(profile, answers) {
+  const target = Number(profile?.protein_target_g) || 0;
+  const meals = Number(answers.meals?.[0]) || 3;
+  return target ? Math.round(target / meals) : "an equal share of my daily protein";
+}
+
+export function buildPrompt(kind, profile, answers, extra, others = {}, training = null) {
   const variety = answers.variety?.[0] ?? "Different every day";
   const me = aboutMe(profile);
   const picked = QUESTIONS[kind]
@@ -139,9 +148,16 @@ function buildPrompt(kind, profile, answers, extra, others = {}, training = null
               ? "- Create 2-3 different menus and spread them across the week so no menu repeats on consecutive days; every weekday must be covered exactly once across the days."
               : "- Create SEVEN separate days, one per weekday (each with exactly one weekday), and give every day DIFFERENT meals. A meal may repeat at most twice in the week.",
           training ? "- Training days (see my workout plan) get more carbs around the workout; rest days get fewer carbs; protein stays the same every day. Average calories across the week must hit my target." : "",
-          "- Time meals around my training time: a carb + protein meal 1.5-3 h before training and a protein-rich meal within 2 h after. Name these slots clearly (Pre-workout / Post-workout) in the meal name.",
+          "- Time meals around my training time: a carb + protein meal 1.5-3 h before training and a protein-rich meal within 2 h after. Mark those meals with \"timing\": \"pre-workout\" or \"post-workout\" (leave it out on other meals).",
+          "- \"name\" is ONLY the dish name (e.g. \"Paneer Dal Curry\"). NEVER put Pre-workout, Post-workout, Rest day, Training day or meal labels in any name, for meals or alternatives.",
           "- Everyday foods I can actually buy and cook, quantities in grams or household measures, realistic portions. Respect my diet type and foods to avoid.",
           "- MOST IMPORTANT: food must be easy to make, or I won't follow it. Prefer simple home staples I already know over fancy recipes.",
+          answers.whey?.[0] === "I have it"
+            ? "- Protein powder: I have whey. Use it in at most ONE dish per day; every other dish (and every alternative) gets its protein from food."
+            : "- NO protein powder: do NOT use whey, protein powder or any supplement in ANY meal or alternative. If a dish needs it to reach its protein, change the dish.",
+          `- PROTEIN FROM FOOD: each main meal should carry about ${proteinPerMeal(profile, answers)} g protein so the day adds up. Reach it with real food the diet allows, combining 2 sources per dish: soya chunks/granules (50 g dry ≈ 26 g), paneer (100 g ≈ 18 g), tofu (100 g ≈ 10 g), hung curd / Greek yogurt (200 g ≈ 20 g), curd (200 g ≈ 7 g), milk (300 ml ≈ 10 g), besan (60 g ≈ 13 g), sattu (50 g ≈ 10 g), cooked dal/chana/rajma (1 cup ≈ 15 g), peanuts or peanut butter (30 g ≈ 8 g), seeds (20 g ≈ 4 g), plus eggs, chicken or fish if my diet allows.`,
+          "- Every category keeps its own whey-free versions. Example high-protein OATS without powder: oats cooked in milk + hung curd + peanut butter + chia; savoury masala oats with soya granules; oats chilla with paneer. Do the same for poha (with soya/peanuts + curd), sandwiches (paneer/soya/hung-curd filling), chilla (besan/moong + paneer/tofu).",
+          "- Alternatives and variety matter most after easy food: follow the ALTERNATIVES, VARIETY and CHECK rules below exactly. Alternatives follow my diet type, foods to avoid and cooking time too.",
           "- Keep every meal EASY: at most 6 common ingredients, no special equipment, within my cooking time. Reuse ingredients across the week so the shopping list stays short, and batch-cook where it helps (e.g. dal or rice for 2 days).",
           "- Make it easy to understand: plain meal names (local name in brackets if useful). In \"recipe\" write exactly this layout: \"Prep: X min\" on the first line, then \"Ingredients: item qty, item qty\", then numbered steps \"1. ... 2. ...\" with at most 4 short steps in simple words.",
         ]
@@ -206,7 +222,7 @@ export default function AiCreate({ kinds, onImport, onBack }) {
         if (valid.length) saved[q.id] = valid;
       }
       for (const q of QUESTIONS[kind]) {
-        const v = q.fromProfile?.(profile);
+        const v = q.fromProfile?.(profile) ?? q.defaultValue;
         if (v && !saved[q.id]?.length) saved[q.id] = [v];
       }
       setAnswers(saved);
@@ -377,6 +393,7 @@ export default function AiCreate({ kinds, onImport, onBack }) {
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? "Prompt copied" : "Copy prompt"}
         </button>
+        <AiLinks prompt={buildPrompt(kind, profile, answers, extra, others, training)} onCopied={() => setCopied(true)} />
       </div>
 
       <div className="mt-6">
