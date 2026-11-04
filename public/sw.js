@@ -1,6 +1,6 @@
 // FitMate service worker: caches the app shell and static assets for offline use.
 // User data lives in IndexedDB and is never touched here.
-const CACHE = "fitmate-v11";
+const CACHE = "fitmate-v12";
 const SHELL = [
   "/",
   "/home",
@@ -96,8 +96,11 @@ self.addEventListener("push", (event) => {
   }
   const perm = self.Notification?.permission ?? "unknown";
   const ios = /iPhone|iPad|iPod/i.test(self.navigator.userAgent);
+  // iPhone: greeting on top, then the message as one sentence pair ("Title. Body").
+  const sentence = (t) => (!t ? "" : /[.?!]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
+  const named = d.name && (d.title || "").includes(d.name); // don't say the name twice
   const shown = ios
-    ? { title: d.name ? `Hey ${d.name}` : "Hey there", body: [d.title, d.body].filter(Boolean).join(" ") }
+    ? { title: d.name && !named ? `Hey ${d.name}` : "Hey there", body: [sentence(d.title), d.body].filter(Boolean).join(" ") }
     : { title: d.title || "Reminder", body: d.body || "" };
   event.waitUntil(
     track(d.pid, "received", `permission: ${perm}`)
