@@ -177,10 +177,13 @@ export default function MiniPlayer() {
   const playing = now?.state === 1 || now?.state === 3; // playing or buffering
   const progress = now?.duration ? Math.min(100, (now.time / now.duration) * 100) : 0;
 
-  // During a workout the bottom of the screen is busy (next set, rest timer): sit at the top there.
+  // During a workout: always the slim bar, just above the "next set" / rest bar, and behind popups
+  // (hold timer, swap) so it never covers them. Tapping it opens the video full screen.
   const inSession = pathname?.startsWith("/session");
-  const place = inSession ? "top-[calc(env(safe-area-inset-top)+4.5rem)]" : "bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] md:bottom-4";
-  const mini = small && !big;
+  const place = inSession ? "bottom-[calc(env(safe-area-inset-bottom)+8.5rem)]" : "bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] md:bottom-4";
+  const layer = inSession ? "z-[45]" : "z-[75]";
+  const mini = (small || inSession) && !big;
+  const openPlayer = () => (inSession ? setBig(true) : setSmall(false));
   const btn = `flex shrink-0 items-center justify-center rounded-lg disabled:opacity-30 ${big ? "h-11 w-11 text-white/80 hover:bg-white/10" : "h-8 w-8 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"}`;
   const miniBtn = "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-700 transition-colors hover:bg-neutral-900/5 active:scale-95 disabled:opacity-30 dark:text-neutral-200 dark:hover:bg-white/10";
   const icon = big ? "h-5 w-5" : "h-4 w-4";
@@ -191,13 +194,13 @@ export default function MiniPlayer() {
         big
           ? "fixed inset-0 z-[95] flex flex-col bg-black pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
           : mini
-            ? `fixed inset-x-3 z-[75] flex items-center gap-3 overflow-hidden rounded-2xl border border-neutral-200/80 bg-white/90 p-2 pr-1 shadow-xl shadow-black/10 backdrop-blur-xl md:inset-x-auto md:right-4 md:w-96 dark:border-white/10 dark:bg-neutral-900/90 dark:shadow-black/40 ${place}`
-            : `fixed right-3 z-[75] w-[min(15rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl md:right-4 md:w-80 dark:border-neutral-800 dark:bg-neutral-900 ${place}`
+            ? `fixed inset-x-3 ${layer} flex items-center gap-3 overflow-hidden rounded-2xl border border-neutral-200/80 bg-white/90 p-2 pr-1 shadow-xl shadow-black/10 backdrop-blur-xl md:inset-x-auto md:right-4 md:w-96 dark:border-white/10 dark:bg-neutral-900/90 dark:shadow-black/40 ${place}`
+            : `fixed right-3 ${layer} w-[min(15rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl md:right-4 md:w-80 dark:border-neutral-800 dark:bg-neutral-900 ${place}`
       }
     >
       {/* The video. Minimised it's the bar's artwork: a centre crop, and taps open the player. */}
       <div
-        onClick={mini ? () => setSmall(false) : undefined}
+        onClick={mini ? openPlayer : undefined}
         className={big ? "relative min-h-0 flex-1" : mini ? "relative h-12 w-12 shrink-0 cursor-pointer overflow-hidden rounded-xl bg-black shadow-md" : "relative aspect-video w-full bg-black"}
       >
         <iframe
@@ -214,7 +217,7 @@ export default function MiniPlayer() {
 
       {mini ? (
         <>
-          <button type="button" onClick={() => setSmall(false)} title="Open player" className="min-w-0 flex-1 text-left">
+          <button type="button" onClick={openPlayer} title="Open player" className="min-w-0 flex-1 text-left">
             <span className="block truncate text-sm font-semibold">{title}</span>
             <span className="flex items-center gap-1.5 text-xs text-neutral-500">
               {playing && (

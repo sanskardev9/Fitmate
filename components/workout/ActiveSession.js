@@ -142,7 +142,7 @@ export default function ActiveSession() {
   const timingEx = timing ? session.plan[timing.exIndex] : null;
 
   return (
-    <div className="min-h-dvh bg-[var(--background)] pb-48">
+    <div className="min-h-dvh bg-[var(--background)] pb-64">
       <header className="sticky top-0 z-30 border-b border-neutral-200 bg-[var(--background)]/90 backdrop-blur-xl dark:border-neutral-800">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
           <button type="button" onClick={() => router.push("/workout")} aria-label="Leave workout (it stays open)" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900">
