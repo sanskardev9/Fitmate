@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { X, Share, SquarePlus } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { cachedProfile, fetchProfile } from "@/lib/services/profileService";
 
 // "Add to Home Screen" suggestion for phones using FitMate in the browser. Android gets the real
 // install prompt; iPhone gets the two steps (it has no prompt). Hidden once installed, and
@@ -20,7 +22,10 @@ function readState() {
   }
 }
 
+const DONE_KEY = "fitmate:installDone";
+
 export default function InstallNudge() {
+  const { user } = useAuth();
   const [show, setShow] = useState(false);
   const [ios, setIos] = useState(false);
   const [steps, setSteps] = useState(false);
@@ -28,6 +33,12 @@ export default function InstallNudge() {
 
   useEffect(() => {
     if (standalone() || !window.matchMedia("(pointer: coarse)").matches || Date.now() < readState().until) return;
+    try {
+      if (localStorage.getItem(DONE_KEY)) return; // said "Already added"
+    } catch {}
+    // Already opened FitMate from a Home Screen on this account: no need to ask.
+    if (user && cachedProfile(user.id)?.app_installed_at) return;
+    if (user) fetchProfile(user.id).then((p) => p?.app_installed_at && setShow(false)).catch(() => {});
     setIos(isIos());
     setPrompt(window.__fitmateInstall ?? null);
     const onPrompt = () => setPrompt(window.__fitmateInstall ?? null);
@@ -39,9 +50,16 @@ export default function InstallNudge() {
       window.removeEventListener("fitmate:installable", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
     };
-  }, []);
+  }, [user]);
 
   if (!show) return null;
+
+  function alreadyAdded() {
+    try {
+      localStorage.setItem(DONE_KEY, "1");
+    } catch {}
+    setShow(false);
+  }
 
   function snooze() {
     const st = readState();
@@ -79,6 +97,12 @@ export default function InstallNudge() {
           <X className="h-4 w-4" />
         </button>
       </div>
+      <p className="mt-2 pl-[52px] text-xs text-neutral-500">
+        Already on your Home Screen?{" "}
+        <button type="button" onClick={alreadyAdded} className="font-semibold text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400">
+          Yes, it&apos;s added
+        </button>
+      </p>
       {steps && (
         <ol className="mt-3 space-y-1.5 border-t border-neutral-100 pt-3 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-300">
           {ios ? (
