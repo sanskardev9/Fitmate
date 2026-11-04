@@ -311,3 +311,10 @@ body {
   height: 60%;
   animation: eq 0.9s ease-in-out infinite;
 }
+
+/* Music minimised to a slim bar: only a little room needed at the bottom (phones). */
+@media (max-width: 767px) {
+  html.music-small main {
+    padding-bottom: 9rem !important;
+  }
+}
