@@ -167,11 +167,15 @@ export default function ResetPasswordForm() {
     return (
       <form onSubmit={savePassword} className="animate-fade-up">
         {popup}
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
+        <div role="status" className="animate-fade-up flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-emerald-800 dark:text-emerald-200">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <span className="text-sm font-semibold">Code verified successfully</span>
+        </div>
+        <span className="mt-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
           <ShieldCheck className="h-6 w-6" />
         </span>
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight">Code verified</h1>
-        <p className="mt-2 text-neutral-600 dark:text-neutral-400">Now choose a new password for {email}.</p>
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight">Choose a new password</h1>
+        <p className="mt-2 text-neutral-600 dark:text-neutral-400">For {email}.</p>
 
         <label className={`${labelClass} mt-6 block`}>New password</label>
         <PasswordInput value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} placeholder="At least 6 characters" autoComplete="new-password" autoFocus />
