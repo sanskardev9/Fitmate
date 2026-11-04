@@ -5,13 +5,15 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db/dexie";
 import { getPreferences } from "@/lib/services/preferencesService";
 import { getDaysForPlan, getDayForWeekday, getExercisesForDay } from "@/lib/services/workoutService";
-import { getActiveSession, recentSessions } from "@/lib/services/sessionService";
+import { getActiveSession, recentSessions, startSession, swapExercise } from "@/lib/services/sessionService";
+import { useRouter } from "next/navigation";
+import SwapSheet from "./SwapSheet";
 import FinishedActions from "./FinishedActions";
 import { formatTarget, WEEKDAYS } from "@/lib/utils";
 import PageHeader from "@/components/common/PageHeader";
 import EndWorkoutButton from "./EndWorkoutButton";
 import { useState } from "react";
-import { ChevronDown, Dumbbell } from "lucide-react";
+import { ChevronDown, Dumbbell, ArrowLeftRight } from "lucide-react";
 import { loadDaily } from "@/lib/services/insights";
 import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
 import { FormVideoButton, FormVideo } from "./FormVideo";
@@ -44,13 +46,24 @@ const SECTION_STYLE = [
 export default function WorkoutHome() {
   const [formOpen, setFormOpen] = useState(null); // exercise whose form video is open
   const [foldOpen, setFoldOpen] = useState({}); // warm-up / cool-down expanded?
+  const [swapFor, setSwapFor] = useState(null); // exercise whose alternatives are open
+  const router = useRouter();
   const data = useLiveQuery(load, []);
   if (!data) return <PageHeader title="Workout" />;
   const { active, plan, today, todayExercises, days, history, ended, endedSets, daily } = data;
   const endedPlanned = daily.today.plannedSets;
 
+  async function swapAndStart(alt) {
+    const ex = swapFor;
+    setSwapFor(null);
+    const session = active && active.dayId === today.id ? active : await startSession(today);
+    await swapExercise(session.id, ex.id, alt);
+    router.push("/session");
+  }
+
   return (
     <>
+      {swapFor && <SwapSheet exercise={swapFor} onClose={() => setSwapFor(null)} onPick={swapAndStart} startsWorkout={!(active && active.dayId === today?.id)} />}
       <PageHeader title="Workout" subtitle={plan?.name} icon={Dumbbell} action={<MusicButton />} />
 
       {active && (
@@ -99,6 +112,12 @@ export default function WorkoutHome() {
                                   <span className="min-w-0 font-medium break-words">{e.name}</span>
                                   <span className="flex shrink-0 items-center gap-2">
                                     <span className="text-neutral-500 tabular-nums">{formatTarget(e)}</span>
+                                    {e.alternatives?.length > 0 && (
+                                      <button type="button" onClick={() => setSwapFor(e)} aria-label={`Swap ${e.name}`} title="Swap" className="inline-flex shrink-0 items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
+                                        <ArrowLeftRight className="h-3.5 w-3.5" />
+                                        <span className="hidden sm:inline">Swap</span>
+                                      </button>
+                                    )}
                                     <FormVideoButton open={formOpen === e.id} onToggle={() => setFormOpen((v) => (v === e.id ? null : e.id))} />
                                   </span>
                                 </div>

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { ArrowLeftRight, X } from "lucide-react";
 
 // Pick an alternative for an exercise in today's workout (the plan itself doesn't change).
-export default function SwapSheet({ exercise, onPick, onClose }) {
+export default function SwapSheet({ exercise, onPick, onClose, startsWorkout = false }) {
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -42,7 +42,7 @@ export default function SwapSheet({ exercise, onPick, onClose }) {
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-xs text-neutral-500">Only for this workout. Your plan stays the same, and your log records what you actually did.</p>
+        <p className="mt-3 text-xs text-neutral-500">{startsWorkout ? "Starts today's workout with this swap. " : ""}Only for this workout. Your plan stays the same, and your log records what you actually did.</p>
       </div>
     </div>
   );
