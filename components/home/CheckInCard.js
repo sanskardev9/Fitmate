@@ -25,10 +25,15 @@ export default function CheckInCard() {
   const [saved, setSaved] = useState(false);
   if (!data) return null;
   const { weights, prefs } = data;
-  const goal = user ? cachedProfile(user.id)?.goal : null;
+  const profile = user ? cachedProfile(user.id) : null;
+  const goal = profile?.goal ?? null;
+  // The weight you gave at sign-up counts as your first weigh-in (so it never asks "first weigh-in").
+  const since = profile?.updated_at ?? profile?.onboarded_at ?? profile?.created_at;
+  const startWeight = profile?.weight_kg && since ? { date: todayKey(new Date(since)), weightKg: Number(profile.weight_kg) } : null;
+  const all = startWeight && !weights.some((w) => w.date <= startWeight.date) ? [startWeight, ...weights] : weights;
   const advice = calorieAdvice({
     goal,
-    weights,
+    weights: all,
     calories: Number(prefs.caloriesTarget) || 0,
     proteinG: prefs.proteinTargetG,
     lastAdjustAt: prefs.lastCalorieAdjustAt,
@@ -36,10 +41,12 @@ export default function CheckInCard() {
   });
 
   const today = todayKey(new Date());
-  const last = weights.at(-1);
+  const last = all.at(-1);
   const daysSince = last ? Math.floor((Date.now() - new Date(`${last.date}T12:00:00`).getTime()) / DAY) : Infinity;
   const sunday = new Date().getDay() === 0;
-  const needWeigh = last?.date !== today && (daysSince >= 7 || (sunday && daysSince >= 3));
+  // Only in the morning (that's when a weigh-in means something): Sundays, or once it's been 8 days.
+  const morning = new Date().getHours() < 12;
+  const needWeigh = morning && last?.date !== today && ((sunday && daysSince >= 3) || daysSince >= 8);
 
   async function saveWeight(e) {
     e.preventDefault();
@@ -112,7 +119,7 @@ export default function CheckInCard() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="font-bold">Weekly weigh-in</p>
-            <p className="text-sm text-neutral-500">{last ? `Last: ${last.weightKg} kg, ${daysSince} days ago.` : "Your first weigh-in."} Morning, before breakfast, is best.</p>
+            <p className="text-sm text-neutral-500">{last ? `Last: ${last.weightKg} kg, ${daysSince === 0 ? "today" : daysSince === 1 ? "yesterday" : `${daysSince} days ago`}.` : "Before breakfast, after the bathroom."} FitMate uses it to keep your calories right.</p>
           </div>
           <div className="flex items-center gap-2">
             <input type="number" inputMode="decimal" step="0.1" min="25" max="300" value={kg} onChange={(e) => setKg(e.target.value)} placeholder={last ? String(last.weightKg) : "kg"} aria-label="Weight in kg" className="h-11 w-24 rounded-xl border border-neutral-300 bg-transparent px-3 text-base tabular-nums outline-none focus:border-emerald-500 dark:border-neutral-700" />
