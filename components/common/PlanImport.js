@@ -166,9 +166,8 @@ export const AI_RULES = {
     'DIET (required on every meal AND every alternative): "veg", "egg", "nonveg" or "vegan" = what that dish contains.',
     'ALTERNATIVES: every meal has EXACTLY 3 "alternatives". Each alternative is a DIFFERENT category from the main meal AND from the other two alternatives (main = Chilla & dosa -> alternatives e.g. Oats, Poha & upma, Sandwich & toast). Protein and calories within 10% of the main meal. Each alternative has the same fields as a meal: "name","category","diet","serving","calories","proteinG","carbsG","fatG","recipe" — but keep each alternative "recipe" to ONE short line (e.g. "Prep: 10 min. Cook besan batter with paneer filling.").',
     'VARIETY (per slot, meals + alternatives across the week): use at least 4 different categories, no category for more than 40% of that slot, and never the same main dish more than twice a week.',
-    'VIDEO SEARCH (required on every meal AND every alternative): "videoSearch" = 2-5 words naming the MAIN dish to cook, the way people search YouTube for its recipe (e.g. "dal paneer tadka", "soya poha", "besan paneer chilla", "masala oats"). Leave out sides (roti, rice, curd, salad) and words like post-workout or high protein.',
-    'VIDEO: never add "videoUrl" (FitMate finds the video from "videoSearch"). Do not search the web for anything.',
-    'BEFORE YOU FINISH (silently, don\'t write it): every meal has 3 alternatives in 3 other categories; every dish has "category", "diet" and "videoSearch"; nothing uses foods I avoid; each day hits my protein target. Your reply is still just the one line + the code block.',
+    'NO VIDEOS: leave out any video fields or links; FitMate finds the recipe video from the dish name.',
+    'BEFORE YOU FINISH (silently, don\'t write it): every meal has 3 alternatives in 3 other categories; every dish has "category" and "diet"; nothing uses foods I avoid; each day hits my protein target. Your reply is still just the one line + the code block.',
   ],
 };
 
