@@ -1,6 +1,6 @@
 // FitMate service worker: caches the app shell and static assets for offline use.
 // User data lives in IndexedDB and is never touched here.
-const CACHE = "fitmate-v9";
+const CACHE = "fitmate-v10";
 const SHELL = [
   "/",
   "/home",
@@ -97,7 +97,7 @@ self.addEventListener("push", (event) => {
   const perm = self.Notification?.permission ?? "unknown";
   event.waitUntil(
     track(d.pid, "received", `permission: ${perm}`)
-      .then(() => self.registration.showNotification(d.title || "FitMate", {
+      .then(() => self.registration.showNotification(d.title || "Reminder", {
         body: d.body || "",
         icon: "/icons/icon-192.png",
         badge: "/icons/badge-96.png",

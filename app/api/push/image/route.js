@@ -45,8 +45,7 @@ export function GET(request) {
           {kind === "workout" ? dumbbell : flame}
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginLeft: 48, color: "#fff", maxWidth: 380 }}>
-          <div style={{ fontSize: 22, letterSpacing: 4, textTransform: "uppercase", opacity: 0.8, fontWeight: 600 }}>FitMate</div>
-          <div style={{ fontSize: kind === "workout" ? 52 : 64, fontWeight: 800, lineHeight: 1.05, marginTop: 10, letterSpacing: -1.5 }}>{headline}</div>
+          <div style={{ fontSize: kind === "workout" ? 52 : 64, fontWeight: 800, lineHeight: 1.05, letterSpacing: -1.5 }}>{headline}</div>
           <div style={{ fontSize: 28, opacity: 0.88, marginTop: 14 }}>{sub}</div>
         </div>
       </div>

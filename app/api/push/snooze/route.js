@@ -20,7 +20,7 @@ export async function POST(request) {
 
   const p = body.payload ?? {};
   const url = typeof p.url === "string" && p.url.startsWith("/") && !p.url.startsWith("//") ? p.url.slice(0, 200) : "/home";
-  const payload = { title: clip(p.title, 120) ?? "FitMate", body: clip(p.body, 300) ?? "", url, image: clip(p.image, 400), kind: clip(p.kind, 32), snoozed: true };
+  const payload = { title: clip(p.title, 120) ?? "Reminder", body: clip(p.body, 300) ?? "", url, image: clip(p.image, 400), kind: clip(p.kind, 32), snoozed: true };
   await admin.from("push_snoozes").insert({ user_id: sub.user_id, due_at: new Date(Date.now() + 60 * 60000).toISOString(), payload });
   await logPushEvents(admin, [{ push_id: UUID.test(body.pid ?? "") ? body.pid : null, user_id: sub.user_id, device: deviceLabel(body.endpoint, sub.user_agent), stage: "snoozed", detail: `${payload.title} · again in 1 hour` }]);
   return Response.json({ ok: true });

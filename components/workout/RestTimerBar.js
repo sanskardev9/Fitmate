@@ -21,7 +21,7 @@ export default function RestTimerBar({ next }) {
         markRestDone();
         restAlert();
         // FitMate is in the background: tell the phone.
-        localNotify(rest.label && rest.label !== "Timer" ? "Rest is over" : "Timer done", rest.label && rest.label !== "Timer" ? `You finished ${rest.label}. Next set is up.` : "Back to it.", { tag: "rest" });
+        localNotify(rest.label && rest.label !== "Timer" ? "Rest's over" : "Time's up", rest.label && rest.label !== "Timer" ? "Next set. Go." : "Back to it.", { tag: "rest" });
       }
     }, 250);
     return () => clearInterval(id);

@@ -24,7 +24,7 @@ async function run(request) {
   for (const z of snoozes ?? []) {
     await admin.from("push_snoozes").update({ sent_at: new Date().toISOString() }).eq("id", z.id).is("sent_at", null);
     const p = z.payload ?? {};
-    const res = await sendPush(admin, [z.user_id], { ...p, actions: [{ action: "open", title: p.url === "/workout" ? "Start workout" : "Open FitMate" }] }, { urgency: "high", ttl: 2 * 3600 });
+    const res = await sendPush(admin, [z.user_id], { ...p, actions: [{ action: "open", title: p.url === "/workout" ? "Start" : "Open" }] }, { urgency: "high", ttl: 2 * 3600 });
     snoozed += res.sent;
   }
 
