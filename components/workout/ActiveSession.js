@@ -15,6 +15,9 @@ import { formatDuration, WEEKDAYS } from "@/lib/utils";
 import RestTimerBar from "./RestTimerBar";
 import { useConfirm } from "@/components/common/ConfirmDialog";
 import TimerPicker from "./TimerPicker";
+import { FormVideoButton, FormVideo } from "./FormVideo";
+import { Music2 } from "lucide-react";
+import { openMusic } from "@/lib/music";
 import { LogoMark } from "@/components/common/Logo";
 
 const holdLabel = (ex) => (ex.type === "hold" ? "Sec" : "Reps");
@@ -30,6 +33,7 @@ export default function ActiveSession() {
   const [timerOpen, setTimerOpen] = useState(false);
   const [layout, setLayout] = useState({}); // exerciseId -> { extra, removed }
   const [drafts, setDrafts] = useState({}); // "exerciseId:set" -> { value, weight }
+  const [formOpen, setFormOpen] = useState(null); // exerciseId whose form video is open
   const [timing, setTiming] = useState(null); // { exIndex, n, idx } for the hold stopwatch
   const rest = useSyncExternalStore(subscribeRest, getRest, () => null);
   const [, setClock] = useState(0);
@@ -148,6 +152,9 @@ export default function ActiveSession() {
               {formatDuration((Date.now() - session.startedAt) / 1000)} · {mainDone}/{planned} sets
             </p>
           </div>
+          <button type="button" onClick={openMusic} aria-label="Workout music" className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-neutral-300 text-fuchsia-500 hover:border-fuchsia-500 dark:border-neutral-700">
+            <Music2 className="h-5 w-5" />
+          </button>
           <button type="button" onClick={() => setTimerOpen(true)} aria-label="Start a timer" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-neutral-300 text-neutral-600 hover:border-emerald-500 hover:text-emerald-600 dark:border-neutral-700 dark:text-neutral-300">
             <Timer className="h-5 w-5" />
           </button>
@@ -208,7 +215,10 @@ export default function ActiveSession() {
             <section className={`overflow-hidden rounded-2xl border bg-white transition-colors dark:bg-neutral-900 ${complete ? "border-emerald-500/50" : "border-neutral-200 dark:border-neutral-800"}`}>
               <div className="flex items-start justify-between gap-3 px-4 pt-4">
                 <div className="min-w-0">
-                  <h2 className="font-semibold break-words">{ex.name}</h2>
+                  <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold break-words">
+                    {ex.name}
+                    <FormVideoButton open={formOpen === ex.exerciseId} onToggle={() => setFormOpen((v) => (v === ex.exerciseId ? null : ex.exerciseId))} />
+                  </h2>
                   <p className="mt-0.5 text-xs text-neutral-500">
                     {ex.sets} × {target ?? "–"}
                     {ex.type === "hold" ? "s hold" : " reps"}
@@ -220,6 +230,11 @@ export default function ActiveSession() {
                   {Object.keys(done).length}/{rows.length}
                 </span>
               </div>
+              {formOpen === ex.exerciseId && (
+                <div className="px-4">
+                  <FormVideo name={ex.name} />
+                </div>
+              )}
 
               {(() => {
                 // Weight column only for weighted work (planned weight or weight used before).

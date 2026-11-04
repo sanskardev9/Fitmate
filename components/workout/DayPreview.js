@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Timer, Weight } from "lucide-react";
 import { SECTION_LABEL } from "@/lib/workout/sections";
+import { FormVideoButton, FormVideo } from "./FormVideo";
 import { WEEKDAYS } from "@/lib/utils";
 
 const fmtRest = (v, unit) => (v === "" || v == null ? null : unit === "min" ? `${v} min` : Number(v) >= 60 && Number(v) % 30 === 0 ? `${Number(v) / 60} min` : `${v}s`);
@@ -9,6 +11,7 @@ const fmtTarget = (e) => (e.target === "" || e.target == null ? "–" : e.unit =
 
 // Read-only look at one day of the plan as it will feel in the gym.
 export default function DayPreview({ day }) {
+  const [formOpen, setFormOpen] = useState(null);
   const items = day.exercises.filter((e) => e.name.trim());
   const groups = [];
   for (const e of items) {
@@ -42,10 +45,14 @@ export default function DayPreview({ day }) {
                 <li key={e.key} className="py-3">
                   <div className="flex items-start justify-between gap-3">
                     <span className="min-w-0 font-medium break-words">{e.name}</span>
-                    <span className="shrink-0 rounded-lg bg-neutral-100 px-2 py-1 text-sm font-semibold tabular-nums dark:bg-neutral-800">
-                      {e.sets || "–"} × {fmtTarget(e)}
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span className="rounded-lg bg-neutral-100 px-2 py-1 text-sm font-semibold tabular-nums dark:bg-neutral-800">
+                        {e.sets || "–"} × {fmtTarget(e)}
+                      </span>
+                      <FormVideoButton open={formOpen === e.key} onToggle={() => setFormOpen((v) => (v === e.key ? null : e.key))} />
                     </span>
                   </div>
+                  {formOpen === e.key && <FormVideo name={e.name} />}
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-neutral-500">
                     {fmtRest(e.restValue, e.restUnit) && (
                       <span className="flex items-center gap-1">

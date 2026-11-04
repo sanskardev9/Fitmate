@@ -21,31 +21,38 @@ function startThumb() {
   return window.innerWidth * (window.devicePixelRatio || 1) >= 1200 ? 0 : 1;
 }
 
-export default function RecipeVideo({ url, dish, search }) {
+// kind="exercise": a short form tutorial for an exercise (same player, different search).
+export default function RecipeVideo({ url, dish, search, kind = "recipe", autoplay = false }) {
+  const exercise = kind === "exercise";
   const own = youtubeId(url);
   const [found, setFound] = useState(own ? { id: own } : null); // null = looking, {id:null} = none
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(autoplay);
   const [thumb, setThumb] = useState(startThumb);
 
   useEffect(() => {
     if (own) return setFound({ id: own });
     let cancelled = false;
     setFound(null);
-    fetch(`/api/recipe-video?v=3&dish=${encodeURIComponent(dish)}${search ? `&q=${encodeURIComponent(search)}` : ""}`)
+    fetch(exercise ? `/api/exercise-video?name=${encodeURIComponent(dish)}` : `/api/recipe-video?v=3&dish=${encodeURIComponent(dish)}${search ? `&q=${encodeURIComponent(search)}` : ""}`)
       .then((r) => r.json())
       .then((j) => !cancelled && setFound({ id: j.videoId ?? null }))
       .catch(() => !cancelled && setFound({ id: null }));
     return () => {
       cancelled = true;
     };
-  }, [own, dish, search]);
+  }, [own, dish, search, exercise]);
 
   if (!found) return <div className="aspect-video w-full animate-pulse rounded-xl bg-neutral-200 dark:bg-neutral-800" />;
 
   if (!found.id) {
     return (
-      <a href={youtubeSearchUrl(search || dish)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400">
-        <Search className="h-3.5 w-3.5" /> Find recipe videos
+      <a
+        href={exercise ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`${dish} exercise form`)}` : youtubeSearchUrl(search || dish)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400"
+      >
+        <Search className="h-3.5 w-3.5" /> {exercise ? "Find form videos" : "Find recipe videos"}
       </a>
     );
   }
@@ -57,12 +64,12 @@ export default function RecipeVideo({ url, dish, search }) {
         <iframe
           className="absolute inset-0 h-full w-full"
           src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-          title={`How to make ${dish}`}
+          title={exercise ? `How to do ${dish}` : `How to make ${dish}`}
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowFullScreen
         />
       ) : (
-        <button type="button" onClick={() => setPlaying(true)} aria-label={`Play recipe video for ${dish}`} className="group absolute inset-0">
+        <button type="button" onClick={() => setPlaying(true)} aria-label={exercise ? `Play form video for ${dish}` : `Play recipe video for ${dish}`} className="group absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`https://i.ytimg.com/vi/${id}/${THUMBS[thumb]}.jpg`}

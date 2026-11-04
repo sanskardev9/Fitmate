@@ -235,3 +235,10 @@ html {
     scroll-behavior: smooth;
   }
 }
+
+/* Workout music playing: room at the bottom of pages for the floating player (phones). */
+@media (max-width: 767px) {
+  html.music-on main {
+    padding-bottom: 17rem !important;
+  }
+}

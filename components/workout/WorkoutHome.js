@@ -14,6 +14,8 @@ import { useState } from "react";
 import { ChevronDown, Dumbbell } from "lucide-react";
 import { loadDaily } from "@/lib/services/insights";
 import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
+import { FormVideoButton, FormVideo } from "./FormVideo";
+import MusicButton from "@/components/music/MusicButton";
 import { WorkoutOutcome } from "@/components/tracker/DailyTracker";
 
 async function load() {
@@ -33,6 +35,7 @@ async function load() {
 
 // Workout tab: resume / start today's session, pick another day, see recent sessions.
 export default function WorkoutHome() {
+  const [formOpen, setFormOpen] = useState(null); // exercise whose form video is open
   const data = useLiveQuery(load, []);
   if (!data) return <PageHeader title="Workout" />;
   const { active, plan, today, todayExercises, days, history, ended, endedSets, daily } = data;
@@ -40,7 +43,7 @@ export default function WorkoutHome() {
 
   return (
     <>
-      <PageHeader title="Workout" subtitle={plan?.name} icon={Dumbbell} />
+      <PageHeader title="Workout" subtitle={plan?.name} icon={Dumbbell} action={<MusicButton />} />
 
       {active && (
         <Link href="/session" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-emerald-600 p-5 text-white shadow-lg shadow-emerald-600/20">
@@ -66,9 +69,15 @@ export default function WorkoutHome() {
                 <h2 className="mt-1 text-xl font-semibold">{today.name}</h2>
                 <ul className="mt-4 divide-y divide-neutral-100 dark:divide-neutral-800">
                   {todayExercises.map((e) => (
-                    <li key={e.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                      <span className="min-w-0 truncate font-medium">{e.name}</span>
-                      <span className="shrink-0 text-neutral-500 tabular-nums">{formatTarget(e)}</span>
+                    <li key={e.id} className="py-2.5 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="min-w-0 font-medium break-words">{e.name}</span>
+                        <span className="flex shrink-0 items-center gap-2">
+                          <span className="text-neutral-500 tabular-nums">{formatTarget(e)}</span>
+                          <FormVideoButton open={formOpen === e.id} onToggle={() => setFormOpen((v) => (v === e.id ? null : e.id))} />
+                        </span>
+                      </div>
+                      {formOpen === e.id && <FormVideo name={e.name} />}
                     </li>
                   ))}
                 </ul>

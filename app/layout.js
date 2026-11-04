@@ -1,6 +1,8 @@
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/common/ServiceWorkerRegister";
 import PullToRefresh from "@/components/common/PullToRefresh";
+import MiniPlayer from "@/components/music/MiniPlayer";
+import MusicPicker from "@/components/music/MusicPicker";
 import Splash from "@/components/common/Splash";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import SyncProvider from "@/components/sync/SyncProvider";
@@ -45,6 +47,8 @@ export default function RootLayout({ children }) {
         </AuthProvider>
         <ServiceWorkerRegister />
         <PullToRefresh />
+        <MiniPlayer />
+        <MusicPicker />
       </body>
     </html>
   );
