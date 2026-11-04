@@ -98,6 +98,48 @@ export function Flame({ lit, className = "h-10 w-10", animate = true }) {
   );
 }
 
+// The big flame on the streak card: layered, flickering, with embers rising when it's lit.
+export function LiveFlame({ lit, className = "h-24 w-24" }) {
+  const embers = [
+    [38, 0, -14],
+    [55, 0.7, 10],
+    [47, 1.4, -6],
+    [60, 2.1, 16],
+    [42, 2.8, 4],
+  ];
+  return (
+    <div className={`relative ${className}`} aria-hidden="true">
+      {lit && <div className="absolute inset-[12%] rounded-full bg-orange-500/35 blur-2xl motion-safe:animate-pulse" />}
+      <svg viewBox="0 0 24 24" className="relative h-full w-full overflow-visible">
+        <defs>
+          <linearGradient id="lf-outer" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor={lit ? "#ea580c" : "#a3a3a3"} />
+            <stop offset="0.6" stopColor={lit ? "#f97316" : "#bdbdbd"} />
+            <stop offset="1" stopColor={lit ? "#fbbf24" : "#d4d4d4"} />
+          </linearGradient>
+          <linearGradient id="lf-mid" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor={lit ? "#f97316" : "#c4c4c4"} />
+            <stop offset="1" stopColor={lit ? "#fde047" : "#e5e5e5"} />
+          </linearGradient>
+        </defs>
+        <g className={lit ? "animate-flicker origin-bottom" : ""} style={{ animationDuration: "1.9s" }}>
+          <path d="M12 1.5c.7 3.4 3.6 4.9 5.1 7.7 1.3 2.2 1.7 4.8.6 7.2A6.6 6.6 0 0112 22.5a6.6 6.6 0 01-5.7-5.9c-.3-2.5.6-4.5 2.1-6.1.3 1.5 1 2.5 2.1 3C10.1 9.6 10.6 5.3 12 1.5z" fill="url(#lf-outer)" />
+        </g>
+        <g className={lit ? "animate-flicker origin-bottom" : ""} style={{ animationDuration: "1.3s", animationDelay: "-0.4s" }}>
+          <path d="M12 8.5c.5 2.3 2.4 3.4 3.1 5.4.7 2.1-.1 4.5-2.3 5.4-2.4.9-5-.6-5.2-3.1-.1-1.7.8-2.9 1.8-3.8.2 1 .7 1.7 1.4 2-.3-2.1.3-4.1 1.2-5.9z" fill="url(#lf-mid)" />
+        </g>
+        <g className={lit ? "animate-flicker origin-bottom" : ""} style={{ animationDuration: "0.9s", animationDelay: "-0.2s" }}>
+          <path d="M12 14c.3 1.3 1.4 1.9 1.7 3.1.3 1.3-.5 2.6-1.8 2.8-1.4.2-2.4-.8-2.4-2 0-1 .6-1.7 1.2-2.2.1.5.3.9.7 1.1-.2-1.1.1-2 .6-2.8z" fill={lit ? "#fff7ed" : "#f5f5f5"} />
+        </g>
+      </svg>
+      {lit &&
+        embers.map(([left, delay, drift], i) => (
+          <span key={i} className="ember absolute bottom-[40%] h-1.5 w-1.5 rounded-full bg-amber-300" style={{ left: `${left}%`, animationDelay: `${delay}s`, "--x": `${drift}px` }} />
+        ))}
+    </div>
+  );
+}
+
 function StreakPill({ count, lit }) {
   return (
     <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold tabular-nums ring-1 ${lit ? "bg-orange-500/10 text-orange-600 ring-orange-500/30 dark:text-orange-400" : "bg-neutral-100 text-neutral-500 ring-neutral-200 dark:bg-neutral-900 dark:ring-neutral-800"}`}>
@@ -107,8 +149,10 @@ function StreakPill({ count, lit }) {
   );
 }
 
+const MILESTONES = [3, 7, 14, 30, 50, 100, 200, 365];
+
 function StreakCard({ streak }) {
-  const { current, best, week, today, freezes, recentFreeze } = streak;
+  const { current, best, week, today, freezes, recentFreeze, nextFreezeIn } = streak;
   const lit = current > 0 || today.status === "done";
   const message =
     today.status === "done"
@@ -118,20 +162,25 @@ function StreakCard({ streak }) {
         : current > 0
           ? "Follow today's plan before midnight to keep it."
           : "Follow today's plan to start a streak.";
+  const next = MILESTONES.find((m) => m > current) ?? current + 100;
+  const prev = [...MILESTONES].reverse().find((m) => m <= current) ?? 0;
+  const toNext = Math.round(((current - prev) / (next - prev)) * 100);
+  // Days that keep the chain going: followed, or saved by a freeze.
+  const kept = (d) => d.status === "done" || d.status === "frozen";
 
   return (
-    <Link href="/streak" className="animate-fade-up relative block overflow-hidden rounded-3xl border border-orange-500/20 transition-transform active:scale-[0.99] bg-gradient-to-br from-orange-500/10 via-white to-white p-5 sm:p-6 dark:via-neutral-900 dark:to-neutral-900">
-      <div className="pointer-events-none absolute -top-16 -left-10 h-48 w-48 rounded-full bg-orange-500/20 blur-3xl" />
-      <div className="relative flex items-center gap-5">
-        <div className="animate-pop">
-          <Flame lit={lit} className="h-20 w-20 drop-shadow-[0_6px_16px_rgba(249,115,22,0.35)]" />
+    <Link href="/streak" className="animate-fade-up relative block overflow-hidden rounded-3xl border border-orange-500/20 bg-gradient-to-br from-orange-500/[0.12] via-white to-white p-5 transition-transform active:scale-[0.99] sm:p-6 dark:from-orange-500/15 dark:via-neutral-900 dark:to-neutral-900">
+      <div className={`pointer-events-none absolute -top-20 -left-12 h-56 w-56 rounded-full blur-3xl ${lit ? "bg-orange-500/25" : "bg-neutral-400/10"}`} />
+      <div className="relative flex items-center gap-4 sm:gap-5">
+        <LiveFlame lit={lit} className="h-20 w-20 shrink-0 sm:h-24 sm:w-24" />
+        <div className="min-w-0 flex-1">
+          <p className={`text-5xl leading-none font-black tracking-tight tabular-nums sm:text-6xl ${lit ? "bg-gradient-to-b from-amber-400 to-orange-600 bg-clip-text text-transparent" : "text-neutral-400"}`}>{current}</p>
+          <p className="mt-1 font-bold text-orange-600 dark:text-orange-400">day streak</p>
+          <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">{message}</p>
         </div>
-        <div className="min-w-0">
-          <p className="text-5xl leading-none font-extrabold tracking-tight tabular-nums">{current}</p>
-          <p className="mt-1 font-semibold text-orange-600 dark:text-orange-400">day streak</p>
-          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{message}</p>
-        </div>
-        <FreezeBadge count={freezes} className="absolute top-0 right-0" />
+        <span title="Streak freezes save your streak if you miss a day" className="absolute top-0 right-0 flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-1 text-xs font-bold text-sky-700 tabular-nums ring-1 ring-sky-500/25 dark:text-sky-300">
+          <Snowflake className="h-3.5 w-3.5" /> {freezes} {freezes === 1 ? "freeze" : "freezes"}
+        </span>
       </div>
       {recentFreeze && (
         <p className="relative mt-4 flex items-center gap-2 rounded-2xl bg-sky-500/10 px-3 py-2 text-sm text-sky-800 dark:text-sky-200">
@@ -139,20 +188,46 @@ function StreakCard({ streak }) {
         </p>
       )}
 
-      <div className="relative mt-6 grid grid-cols-7 gap-2">
-        {week.map((d, i) => (
-          <div key={d.key} className="flex flex-col items-center gap-1.5">
-            <span className={`text-xs font-semibold ${d.isToday ? "text-orange-600 dark:text-orange-400" : "text-neutral-500"}`}>{DAY_LETTERS[i]}</span>
-            <DayBubble status={d.status} isToday={d.isToday} delay={i * 70} />
-          </div>
-        ))}
+      {/* The week as a chain: kept days are joined by an orange line. */}
+      <div className="relative mt-6 grid grid-cols-7">
+        {week.map((d, i) => {
+          const joinLeft = i > 0 && kept(d) && kept(week[i - 1]);
+          const joinRight = i < 6 && kept(d) && kept(week[i + 1]);
+          return (
+            <div key={d.key} className="relative flex flex-col items-center gap-1.5">
+              <span className={`text-xs font-bold ${d.isToday ? "text-orange-600 dark:text-orange-400" : "text-neutral-400"}`}>{DAY_LETTERS[i]}</span>
+              <div className="relative flex h-12 w-full items-center justify-center">
+                {joinLeft && <span className="absolute top-1/2 left-0 h-1.5 w-1/2 -translate-y-1/2 bg-gradient-to-r from-orange-400 to-orange-500" />}
+                {joinRight && <span className="absolute top-1/2 right-0 h-1.5 w-1/2 -translate-y-1/2 bg-gradient-to-r from-orange-500 to-orange-400" />}
+                <DayBubble status={d.status} isToday={d.isToday} delay={i * 70} />
+              </div>
+            </div>
+          );
+        })}
       </div>
-      {best > 0 && (
-        <p className="relative mt-4 flex items-center gap-1.5 text-xs text-neutral-500">
-          <Trophy className="h-3.5 w-3.5" /> Best streak: {best} day{best === 1 ? "" : "s"}
-          <span className="ml-auto flex items-center gap-0.5 font-medium text-orange-600 dark:text-orange-400">Calendar <ChevronRight className="h-3.5 w-3.5" /></span>
-        </p>
-      )}
+
+      <div className="relative mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-neutral-500">
+        <span className="flex min-w-[10rem] flex-1 items-center gap-2">
+          <span className="shrink-0 font-semibold text-neutral-700 dark:text-neutral-300">{next}-day goal</span>
+          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
+            <span className="block h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-[width] duration-1000" style={{ width: `${Math.max(4, toNext)}%` }} />
+          </span>
+          <span className="shrink-0 tabular-nums">{next - current} to go</span>
+        </span>
+        {nextFreezeIn != null && (
+          <span className="flex items-center gap-1">
+            <Snowflake className="h-3.5 w-3.5 text-sky-500" /> Freeze in {nextFreezeIn} {nextFreezeIn === 1 ? "day" : "days"}
+          </span>
+        )}
+        {best > 0 && (
+          <span className="flex items-center gap-1">
+            <Trophy className="h-3.5 w-3.5" /> Best {best}
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-0.5 font-semibold text-orange-600 dark:text-orange-400">
+          Calendar <ChevronRight className="h-3.5 w-3.5" />
+        </span>
+      </div>
     </Link>
   );
 }
@@ -167,7 +242,8 @@ export function FreezeBadge({ count, className = "" }) {
 }
 
 function DayBubble({ status, isToday, delay }) {
-  const base = "flex h-10 w-10 items-center justify-center rounded-full sm:h-11 sm:w-11";
+  const size = isToday ? "h-11 w-11 sm:h-12 sm:w-12" : "h-9 w-9 sm:h-10 sm:w-10";
+  const base = `relative z-10 flex ${size} items-center justify-center rounded-full`;
   if (status === "frozen")
     return (
       <span title="Saved by a streak freeze" className={`${base} bg-gradient-to-b from-sky-300 to-sky-500 text-white shadow-md shadow-sky-500/30`}>
@@ -175,9 +251,14 @@ function DayBubble({ status, isToday, delay }) {
       </span>
     );
   if (status === "done")
-    return (
+    return isToday ? (
+      <span className={`${base} animate-pop bg-gradient-to-b from-amber-400 to-orange-600 text-white shadow-lg shadow-orange-500/40 ring-4 ring-orange-500/20`} style={{ animationDelay: `${delay}ms` }}>
+        <span className="absolute inset-0 rounded-full bg-orange-400/40 motion-safe:animate-ping [animation-duration:2.4s]" />
+        <Flame lit animate className="relative h-7 w-7 [&_path:first-child]:fill-white [&_path:last-child]:fill-amber-200" />
+      </span>
+    ) : (
       <span className={`${base} animate-pop bg-gradient-to-b from-amber-400 to-orange-500 text-white shadow-md shadow-orange-500/30`} style={{ animationDelay: `${delay}ms` }}>
-        <Flame lit animate={false} className="h-6 w-6 [&_path:first-child]:fill-white [&_path:last-child]:fill-orange-300" />
+        <Check className="h-5 w-5" strokeWidth={3.5} />
       </span>
     );
   if (status === "missed")
@@ -188,13 +269,13 @@ function DayBubble({ status, isToday, delay }) {
     );
   if (status === "pending")
     return (
-      <span className={`${base} relative border-2 border-dashed border-orange-400 text-orange-500`}>
+      <span className={`${base} border-2 border-dashed border-orange-400 bg-white text-orange-500 dark:bg-neutral-900`}>
         <span className="animate-pulse-ring absolute inset-0 rounded-full bg-orange-400/30" />
-        <Flame lit={false} animate={false} className="h-5 w-5 opacity-50" />
+        <Flame lit={false} animate={false} className="h-5 w-5 opacity-60" />
       </span>
     );
-  if (status === "rest") return <span className={`${base} ${isToday ? "ring-2 ring-orange-400/50" : ""} bg-neutral-100 dark:bg-neutral-800`}><span className="h-1.5 w-1.5 rounded-full bg-neutral-400" /></span>;
-  return <span className={`${base} border-2 border-neutral-200 dark:border-neutral-800`} />;
+  if (status === "rest") return <span title="Rest day" className={`${base} ${isToday ? "ring-2 ring-orange-400/50" : ""} bg-neutral-100 dark:bg-neutral-800`}><span className="h-1.5 w-1.5 rounded-full bg-neutral-400" /></span>;
+  return <span className={`${base} border-2 border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900`} />;
 }
 
 // ---------------------------------------------------------------- next up

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db/dexie";
 import { setPreference } from "@/lib/services/preferencesService";
-import { logMeal, unlogMeal, removeExtraFood, addMealAddon, removeMealAddon } from "@/lib/services/dietService";
+import { logMeal, unlogMeal, removeExtraFood, addMealAddon, removeMealAddon, logExtraFood } from "@/lib/services/dietService";
 import { loadDaily, buildInsights } from "@/lib/services/insights";
 import { uid, now, WEEKDAYS } from "@/lib/utils";
 import TargetsForm from "@/components/targets/TargetsForm";
@@ -16,6 +16,7 @@ import { Repeat2, Plus, Trash2, X, Check } from "lucide-react";
 import AddFoodSheet from "@/components/diet/AddFoodSheet";
 import MealSwap from "@/components/diet/MealSwap";
 import { friendlyRecipe } from "@/lib/diet/groceries";
+import { FOODS, scaleFood } from "@/lib/data/foods";
 import { dishName, mealTiming } from "@/lib/diet/dishName";
 
 const ICONS = {
@@ -303,15 +304,41 @@ export function Nutrition({ data, title = "Today's meals" }) {
         })}
       </div>
       {(() => {
-        // Following the plan still leaves fat short: the plan itself is low. Suggest a small top-up.
+        // Following the plan still leaves fat short: the plan itself is low. One tap adds a top-up,
+        // with values from FitMate's food list, sized to the gap.
         const planFat = data.plannedNutrition?.fatG ?? 0;
         const short = Math.round((targets.fatG || 0) - planFat);
-        if (!planFat || short < Math.max(5, (targets.fatG || 0) * 0.1)) return null;
-        const peanuts = Math.min(40, Math.round(((short / 0.5) * 1) / 5) * 5); // peanuts ~50% fat
+        const stillShort = (targets.fatG || 0) - eaten.fatG;
+        if (!planFat || short < Math.max(5, (targets.fatG || 0) * 0.1) || stillShort < 3) return null;
+        const byName = (n) => FOODS.find((x) => x.name.startsWith(n));
+        const g = Math.min(40, Math.max(10, Math.round(stillShort / 0.5 / 5) * 5)); // peanuts are ~50% fat
+        const options = [
+          [byName("Peanuts"), `${g} g`],
+          [byName("Ghee"), stillShort >= 10 ? "14 g" : "5 g"],
+          [byName("Full-fat curd"), "200 g"],
+        ].filter(([food]) => food);
         return (
-          <p className="mt-3 rounded-xl bg-violet-500/10 px-3.5 py-2.5 text-xs leading-relaxed text-violet-900 dark:text-violet-200">
-            <b className="font-semibold">Your plan is {short} g low on fat today.</b> Top it up with about {peanuts} g peanuts, 1 tbsp ghee or oil in cooking, or full-fat curd instead of low-fat. Use &ldquo;Add to this meal&rdquo; to log it.
-          </p>
+          <div className="mt-3 rounded-xl bg-violet-500/10 px-3.5 py-3 text-xs text-violet-900 dark:text-violet-200">
+            <p>
+              <b className="font-semibold">Your plan is {short} g low on fat today.</b> Add one of these to close the gap:
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {options.map(([food, amount]) => {
+                const v = scaleFood(food, amount);
+                const label = food.name.split(" (")[0];
+                return (
+                  <button
+                    key={food.name}
+                    type="button"
+                    onClick={() => logExtraFood(today.key, { name: label, serving: amount === "14 g" ? "1 tbsp (14 g)" : amount === "5 g" ? "1 tsp (5 g)" : amount, ...v })}
+                    className="rounded-full bg-white px-3 py-1.5 font-semibold text-violet-800 shadow-sm ring-1 ring-violet-500/20 transition-transform hover:bg-violet-50 active:scale-95 dark:bg-neutral-900 dark:text-violet-200 dark:hover:bg-neutral-800"
+                  >
+                    + {amount === "14 g" ? "1 tbsp" : amount === "5 g" ? "1 tsp" : amount} {label.toLowerCase()} <span className="font-normal opacity-70">· {v.fatG} g fat</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         );
       })()}
 

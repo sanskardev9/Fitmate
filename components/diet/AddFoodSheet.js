@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
-import { FOODS } from "@/lib/data/foods";
+import { FOODS, findFood, scaleFood } from "@/lib/data/foods";
 import { logExtraFood } from "@/lib/services/dietService";
 import SearchSelect from "@/components/common/SearchSelect";
 
@@ -16,6 +16,11 @@ export default function AddFoodSheet({ dateKey, onClose, title = "Add something 
   const [mounted, setMounted] = useState(false);
   const [form, setForm] = useState({ name: "", serving: "", proteinG: "", calories: "", carbsG: "", fatG: "" });
   const [error, setError] = useState("");
+  const [food, setFood] = useState(null); // the list food the numbers came from (rescaled with the amount)
+  const fill = (f, serving) => setForm((x) => {
+    const v = scaleFood(f, serving);
+    return { ...x, serving, proteinG: String(v.proteinG), calories: String(v.calories), carbsG: String(v.carbsG), fatG: String(v.fatG) };
+  });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -29,11 +34,26 @@ export default function AddFoodSheet({ dateKey, onClose, title = "Add something 
     };
   }, [onClose]);
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => {
+    const value = e.target.value;
+    if (k === "serving" && food) return fill(food, value); // "30g" -> values for 30 g
+    if (k !== "serving" && k !== "name") setFood(null); // typed their own numbers
+    setForm((f) => ({ ...f, [k]: value }));
+  };
 
   async function save(e) {
     e.preventDefault();
     if (!form.name.trim()) return setError("What did you eat?");
+    // Typed a common food without picking it: use its values.
+    if (form.proteinG === "" && form.calories === "") {
+      const match = findFood(form.name);
+      if (match) {
+        const v = scaleFood(match, form.serving || match.serving);
+        setSaving(true);
+        await (onSubmit ? onSubmit({ ...form, serving: form.serving || match.serving, ...v }) : logExtraFood(dateKey, { ...form, serving: form.serving || match.serving, ...v }));
+        return onClose();
+      }
+    }
     if (form.proteinG === "" || form.calories === "") return setError("Add protein and calories (check the pack or a quick search).");
     setSaving(true);
     await (onSubmit ? onSubmit(form) : logExtraFood(dateKey, form));
@@ -66,12 +86,27 @@ export default function AddFoodSheet({ dateKey, onClose, title = "Add something 
           options={FOOD_OPTIONS}
           value={form.name}
           placeholder="e.g. Protein lassi"
-          onChange={(name) => setForm((f) => ({ ...f, name }))}
-          onSelect={(o) =>
-            setForm((f) =>
-              o.custom ? { ...f, name: o.name } : { name: o.name, serving: o.serving ?? "", proteinG: String(o.proteinG ?? ""), calories: String(o.calories ?? ""), carbsG: String(o.carbsG ?? ""), fatG: String(o.fatG ?? "") },
-            )
-          }
+          onChange={(name) => {
+            setForm((f) => ({ ...f, name }));
+            // A common food typed in: show its values right away (unless they typed their own).
+            const match = findFood(name);
+            if (match && (food || form.proteinG === "")) {
+              setFood(match);
+              fill(match, form.serving || match.serving);
+            }
+          }}
+          onSelect={(o) => {
+            if (o.custom) {
+              const match = findFood(o.name);
+              setFood(match);
+              setForm((f) => ({ ...f, name: o.name }));
+              if (match) fill(match, form.serving || match.serving);
+              return;
+            }
+            setFood(o);
+            setForm((f) => ({ ...f, name: o.name }));
+            fill(o, o.serving ?? "");
+          }}
         />
 
         <label className="mt-4 mb-1.5 block text-sm font-medium">
