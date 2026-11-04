@@ -140,25 +140,55 @@ export default function StreakScreen() {
 
 const LABEL = { done: "followed", missed: "missed", frozen: "saved by a streak freeze", rest: "rest day", pending: "today, not done yet", future: "upcoming" };
 
-// Freezes you hold (max 2), how they work, and progress to the next one.
-// One quiet line: freezes held (max 2) and when the next one comes. Tap for how they work.
+// Freezes you hold (max 2) as ice-cube slots, progress to the next one, and how they work.
 function Freezes({ streak }) {
   const { freezes, nextFreezeIn } = streak;
+  const full = nextFreezeIn == null;
+  const done = full ? FREEZE_EVERY : FREEZE_EVERY - nextFreezeIn; // days towards the next freeze
   return (
-    <details className="group mt-3 rounded-2xl border border-neutral-200 px-4 py-2.5 text-sm dark:border-neutral-800">
-      <summary className="flex cursor-pointer list-none items-center gap-2.5">
-        <span className="flex gap-1">
-          {Array.from({ length: MAX_FREEZES }, (_, i) => (
-            <Snowflake key={i} className={`h-4 w-4 ${i < freezes ? "text-sky-500" : "text-neutral-300 dark:text-neutral-700"}`} />
-          ))}
-        </span>
-        <span className="font-medium">
-          {freezes} streak freeze{freezes === 1 ? "" : "s"}
-        </span>
-        <span className="ml-auto text-xs text-neutral-500">{nextFreezeIn == null ? "Max held" : `Next in ${nextFreezeIn}d`}</span>
-      </summary>
-      <p className="mt-2 text-xs text-neutral-500">A missed planned day uses one automatically, so your streak survives. Earn 1 every {FREEZE_EVERY} days in a row, hold up to {MAX_FREEZES}.</p>
-    </details>
+    <section className="mt-3 overflow-hidden rounded-3xl border border-sky-500/20 bg-gradient-to-br from-sky-500/10 via-white to-white p-4 sm:p-5 dark:via-neutral-900 dark:to-neutral-900">
+      <div className="flex items-center gap-4">
+        <div className="flex shrink-0 gap-2">
+          {Array.from({ length: MAX_FREEZES }, (_, i) =>
+            i < freezes ? (
+              <span key={i} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-b from-sky-300 to-sky-500 text-white shadow-md shadow-sky-500/30 ring-1 ring-white/40">
+                <Snowflake className="h-6 w-6" />
+              </span>
+            ) : (
+              <span key={i} className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-dashed border-sky-300/70 text-sky-300 dark:border-sky-700 dark:text-sky-800">
+                <Snowflake className="h-5 w-5" />
+              </span>
+            ),
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-bold">
+            {freezes} of {MAX_FREEZES} streak freezes
+          </p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">{full ? "You're holding the most you can." : freezes ? "Ready to save your streak." : "None yet. Keep your streak going to earn one."}</p>
+        </div>
+      </div>
+
+      {!full && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-xs font-semibold">
+            <span className="text-sky-700 dark:text-sky-300">Next freeze</span>
+            <span className="text-neutral-500 tabular-nums">
+              {nextFreezeIn} {nextFreezeIn === 1 ? "day" : "days"} to go
+            </span>
+          </div>
+          <div className="mt-1.5 grid gap-1" style={{ gridTemplateColumns: `repeat(${FREEZE_EVERY}, minmax(0, 1fr))` }}>
+            {Array.from({ length: FREEZE_EVERY }, (_, i) => (
+              <span key={i} className={`h-2 rounded-full ${i < done ? "bg-sky-500" : "bg-sky-500/15"}`} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="mt-4 text-xs leading-relaxed text-neutral-500">
+        Miss a planned day and a freeze is used by itself, so your streak survives. You earn one for every {FREEZE_EVERY} days in a row and can hold up to {MAX_FREEZES}.
+      </p>
+    </section>
   );
 }
 

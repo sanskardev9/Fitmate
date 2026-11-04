@@ -206,14 +206,16 @@ function StreakCard({ streak }) {
         })}
       </div>
 
-      <div className="relative mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-neutral-500">
-        <span className="flex min-w-[10rem] flex-1 items-center gap-2">
-          <span className="shrink-0 font-semibold text-neutral-700 dark:text-neutral-300">{next}-day goal</span>
-          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-            <span className="block h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-[width] duration-1000" style={{ width: `${Math.max(4, toNext)}%` }} />
-          </span>
-          <span className="shrink-0 tabular-nums">{next - current} to go</span>
+      {/* Next streak milestone (3, 7, 14, 30 … days). */}
+      <div className="relative mt-5">
+        <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          {next - current === 1 ? "1 more day" : `${next - current} more days`} to a {next}-day streak
+        </p>
+        <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
+          <span className="block h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-[width] duration-1000" style={{ width: `${Math.max(4, toNext)}%` }} />
         </span>
+      </div>
+      <div className="relative mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-neutral-500">
         {nextFreezeIn != null && (
           <span className="flex items-center gap-1">
             <Snowflake className="h-3.5 w-3.5 text-sky-500" /> Freeze in {nextFreezeIn} {nextFreezeIn === 1 ? "day" : "days"}
