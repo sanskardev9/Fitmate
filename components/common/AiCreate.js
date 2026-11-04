@@ -238,6 +238,16 @@ export default function AiCreate({ kinds, onImport, onBack }) {
   useEffect(() => {
     loadTraining().then(setTraining).catch(() => setTraining(null));
   }, []);
+  // Typed answers (max reps, "other" boxes, extra notes) are saved too, so a refresh keeps them.
+  const typedLoaded = useRef(null);
+  useEffect(() => {
+    if (typedLoaded.current !== kind) return; // don't overwrite saved answers before they've loaded
+    const t = setTimeout(() => {
+      setPreference(`aiOthers_${kind}`, others);
+      setPreference(`aiExtra_${kind}`, extra);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [kind, others, extra]);
   const [copied, setCopied] = useState(false);
   const [reply, setReply] = useState("");
   const [error, setError] = useState("");
@@ -262,8 +272,11 @@ export default function AiCreate({ kinds, onImport, onBack }) {
         if (v && !saved[q.id]?.length) saved[q.id] = [v];
       }
       setAnswers(saved);
+      const typed = prefs[`aiOthers_${kind}`];
+      setOthers(typed && typeof typed === "object" ? typed : {});
+      setExtra(typeof prefs[`aiExtra_${kind}`] === "string" ? prefs[`aiExtra_${kind}`] : "");
+      typedLoaded.current = kind;
     });
-    setExtra("");
     setCopied(false);
     return () => {
       cancelled = true;
