@@ -16,6 +16,7 @@ import { Nutrition } from "@/components/tracker/DailyTracker";
 import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
 import NotifyNudge from "./NotifyNudge";
 import InstallNudge from "./InstallNudge";
+import StreakCelebration from "./StreakCelebration";
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -75,7 +76,7 @@ export default function HomeToday() {
       <InstallNudge />
       <NotifyNudge streak={streak.current} />
 
-      {celebrate && <Celebration count={streak.current} onClose={() => setCelebrate(false)} />}
+      {celebrate && <StreakCelebration count={streak.current} best={streak.best} week={streak.week} freezes={streak.freezes} onClose={() => setCelebrate(false)} />}
     </div>
   );
 }
@@ -356,48 +357,6 @@ function Bar({ pct, className = "", fill }) {
 
 // ---------------------------------------------------------------- celebration
 
-const CONFETTI_COLORS = ["#f97316", "#facc15", "#10b981", "#38bdf8", "#f472b6", "#a78bfa"];
-
-function Celebration({ count, onClose }) {
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 70 }, (_, i) => ({
-        left: Math.random() * 100,
-        delay: Math.random() * 0.6,
-        drift: (Math.random() - 0.5) * 240,
-        spin: 360 + Math.random() * 720,
-        size: 6 + Math.random() * 7,
-        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-        round: Math.random() > 0.6,
-      })),
-    [],
-  );
-
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 px-6 backdrop-blur-sm" onClick={onClose}>
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {pieces.map((p, i) => (
-          <span
-            key={i}
-            className="animate-confetti absolute top-0"
-            style={{ left: `${p.left}%`, width: p.size, height: p.round ? p.size : p.size * 1.8, background: p.color, borderRadius: p.round ? "999px" : "2px", animationDelay: `${p.delay}s`, "--drift": `${p.drift}px`, "--spin": `${p.spin}deg` }}
-          />
-        ))}
-      </div>
-      <div className="animate-pop relative w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl dark:bg-neutral-900" onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto w-fit">
-          <Flame lit className="h-28 w-28 drop-shadow-[0_10px_24px_rgba(249,115,22,0.45)]" />
-        </div>
-        <p className="animate-rise mt-2 text-6xl font-extrabold tabular-nums [animation-delay:200ms]">{count}</p>
-        <p className="animate-rise text-xl font-bold text-orange-600 [animation-delay:300ms] dark:text-orange-400">day streak!</p>
-        <p className="animate-rise mt-2 text-neutral-600 [animation-delay:400ms] dark:text-neutral-400">You followed your plan today. Come back tomorrow to keep it going.</p>
-        <button type="button" onClick={onClose} className="animate-rise mt-6 w-full rounded-2xl bg-orange-500 py-4 text-lg font-bold text-white shadow-[0_4px_0_#c2410c] [animation-delay:500ms] active:translate-y-1 active:shadow-none">
-          Keep it up
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function Skeleton() {
   return (

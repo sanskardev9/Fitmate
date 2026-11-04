@@ -3,14 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { ShoppingBasket, ChevronRight } from "lucide-react";
-import { upcomingMeals, friendlyIngredients } from "@/lib/diet/groceries";
+import { ShoppingBasket, ChevronRight, ChevronDown } from "lucide-react";
+import { upcomingMeals, friendlyRecipe } from "@/lib/diet/groceries";
+import RecipeVideo from "./RecipeVideo";
 import { dishName } from "@/lib/diet/dishName";
 
 // The coming week at a glance (so you can prep and shop), plus the way into the grocery list.
 export default function WeekAhead({ planId }) {
   const days = useLiveQuery(() => upcomingMeals(planId, 7), [planId]);
   const [pick, setPick] = useState(1); // tomorrow
+  const [open, setOpen] = useState(null); // meal showing its recipe + video
   if (!days) return null;
   const day = days[pick];
   const label = (d, i) => (i === 0 ? "Today" : i === 1 ? "Tomorrow" : d.date.toLocaleDateString(undefined, { weekday: "short" }));
@@ -29,7 +31,10 @@ export default function WeekAhead({ planId }) {
           <button
             key={d.key}
             type="button"
-            onClick={() => setPick(i)}
+            onClick={() => {
+              setPick(i);
+              setOpen(null);
+            }}
             className={`shrink-0 rounded-xl border px-3 py-2 text-left transition-colors ${pick === i ? "border-emerald-500 bg-emerald-500/10" : "border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"}`}
           >
             <span className={`block text-sm font-semibold ${pick === i ? "text-emerald-700 dark:text-emerald-300" : ""}`}>{label(d, i)}</span>
@@ -44,26 +49,27 @@ export default function WeekAhead({ planId }) {
           <>
             <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {day.meals.map((m) => (
-                <li key={m.id} className="flex items-start gap-3 px-4 py-3">
-                  <span className="w-20 shrink-0 pt-0.5 text-xs font-semibold tracking-wide text-neutral-500 uppercase">{m.slot || "Meal"}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium break-words">{dishName(m.name)}</span>
-                    {m.serving && <span className="block text-xs text-neutral-500">{m.serving}</span>}
-                    {friendlyIngredients(m.recipe).length > 0 && (
-                      <span className="mt-1.5 flex flex-wrap gap-1">
-                        {friendlyIngredients(m.recipe).map((x, i) => (
-                          <span key={i} className="rounded-md bg-neutral-100 px-1.5 py-0.5 text-[11px] text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                            {x}
-                          </span>
-                        ))}
-                      </span>
-                    )}
-                  </span>
-                  <span className="shrink-0 text-right text-xs text-neutral-500 tabular-nums">
-                    {m.calories ?? "–"} kcal
-                    <br />
-                    {m.proteinG ?? "–"} g protein
-                  </span>
+                <li key={m.id} className="px-4 py-3">
+                  {/* Tap a meal: its ingredients, steps and video, same as Today's meals. */}
+                  <button type="button" onClick={() => setOpen(open === m.id ? null : m.id)} aria-expanded={open === m.id} className="flex w-full items-start gap-3 text-left">
+                    <span className="w-20 shrink-0 pt-0.5 text-xs font-semibold tracking-wide text-neutral-500 uppercase">{m.slot || "Meal"}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium break-words">{dishName(m.name)}</span>
+                      {m.serving && <span className="block text-xs text-neutral-500">{m.serving}</span>}
+                    </span>
+                    <span className="shrink-0 text-right text-xs text-neutral-500 tabular-nums">
+                      {m.calories ?? "–"} kcal
+                      <br />
+                      {m.proteinG ?? "–"} g protein
+                    </span>
+                    <ChevronDown className={`mt-0.5 h-4 w-4 shrink-0 text-neutral-400 transition-transform ${open === m.id ? "rotate-180" : ""}`} />
+                  </button>
+                  {open === m.id && (
+                    <div className="animate-fade-up mt-3 space-y-2 sm:ml-[5.75rem]">
+                      {m.recipe && <p className="rounded-xl bg-neutral-50 p-3 text-xs leading-relaxed whitespace-pre-line text-neutral-600 dark:bg-neutral-950 dark:text-neutral-400">{friendlyRecipe(m.recipe)}</p>}
+                      <RecipeVideo key={m.name} url={m.videoUrl} dish={m.name} search={m.videoSearch} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

@@ -257,43 +257,36 @@ export function Nutrition({ data, title = "Today's meals" }) {
     ["Carbs", eaten.carbsG, targets.carbsG, "g", "bg-sky-500"],
     ["Fat", eaten.fatG, targets.fatG, "g", "bg-rose-500"],
   ].filter(([label, , goal]) => goal > 0 || label === "Protein");
-  // Protein and calories are what matter day to day; carbs and fat stay as a small line.
+  // Protein and calories full width; carbs and fat side by side, same bars. Over target (except
+  // protein) by more than 10% shows in red with how much over.
   const mainBars = bars.filter(([l]) => l === "Protein" || l === "Calories");
   const minor = bars.filter(([l]) => l === "Carbs" || l === "Fat");
+  const macro = ([label, value, goal, unit, color], small) => {
+    const pct = goal ? Math.min(100, Math.round((value / goal) * 100)) : 0;
+    const left = goal ? Math.round(goal - value) : null;
+    const over = goal && label !== "Protein" && value > goal * 1.1;
+    return (
+      <div key={label} className="min-w-0">
+        <div className={`flex items-baseline justify-between gap-2 ${small ? "text-xs" : "text-sm"}`}>
+          <span className="font-medium">{label}</span>
+          <span className="truncate text-neutral-500 tabular-nums">
+            <b className={over ? "text-rose-600 dark:text-rose-400" : "text-neutral-900 dark:text-neutral-100"}>{Math.round(value)}</b> / {goal ? Math.round(goal) : "–"} {unit}
+            {over ? <span className="ml-1.5 text-xs text-rose-600 dark:text-rose-400">· {Math.round(value - goal)} over</span> : left > 0 ? <span className="ml-1.5 text-xs">· {left} left</span> : null}
+          </span>
+        </div>
+        <div className={`mt-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800 ${small ? "h-1.5" : "h-2"}`}>
+          <div className={`h-full rounded-full ${over ? "bg-rose-500" : color} transition-[width] duration-700 ease-out`} style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <section className={card}>
       <Heading icon="leaf" title={title} sub={today.meals.length ? `${today.eatenPlanned}/${today.meals.length} meals eaten` : "No meals planned today"} />
 
-      <div className="mt-5 space-y-3">
-        {mainBars.map(([label, value, goal, unit, color]) => {
-          const pct = goal ? Math.min(100, Math.round((value / goal) * 100)) : 0;
-          const left = goal ? Math.max(0, Math.round(goal - value)) : null;
-          return (
-            <div key={label}>
-              <div className="flex items-baseline justify-between text-sm">
-                <span className="font-medium">{label}</span>
-                <span className="text-neutral-500 tabular-nums">
-                  <b className="text-neutral-900 dark:text-neutral-100">{Math.round(value)}</b> / {goal ? Math.round(goal) : "–"} {unit}
-                  {left ? <span className="ml-1.5 text-xs">· {left} left</span> : null}
-                </span>
-              </div>
-              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-                <div className={`h-full rounded-full ${color} transition-[width] duration-700 ease-out`} style={{ width: `${pct}%` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {minor.length > 0 && (
-        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 tabular-nums">
-          {minor.map(([label, value, goal, unit]) => (
-            <span key={label}>
-              {label} <b className="font-semibold text-neutral-700 dark:text-neutral-300">{Math.round(value)}</b>/{Math.round(goal)} {unit}
-            </span>
-          ))}
-        </p>
-      )}
+      <div className="mt-5 space-y-3">{mainBars.map((b) => macro(b, false))}</div>
+      {minor.length > 0 && <div className="mt-3 grid grid-cols-2 gap-4">{minor.map((b) => macro(b, true))}</div>}
 
       {today.meals.length > 0 && today.eatenPlanned === 0 && <p className="mt-5 -mb-2 text-xs text-neutral-500">Tap ✓ when you eat a meal. Tap a meal to see its recipe and video.</p>}
       {today.meals.length > 0 && (

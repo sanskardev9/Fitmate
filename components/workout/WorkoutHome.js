@@ -13,7 +13,7 @@ import { formatTarget, WEEKDAYS } from "@/lib/utils";
 import PageHeader from "@/components/common/PageHeader";
 import EndWorkoutButton from "./EndWorkoutButton";
 import { useState } from "react";
-import { ChevronDown, Dumbbell, ArrowLeftRight } from "lucide-react";
+import { ChevronDown, Dumbbell, ArrowLeftRight, Check, Timer, Flame } from "lucide-react";
 import { loadDaily } from "@/lib/services/insights";
 import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
 import { FormVideoButton, FormVideo } from "./FormVideo";
@@ -130,7 +130,35 @@ export default function WorkoutHome() {
                     );
                   })}
                 </ul>
-                {!active && ended ? (
+                {!active && ended && endedSets >= endedPlanned ? (
+                  // All done: make it feel like it.
+                  <div className="animate-fade-up relative mt-5 overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-white shadow-lg shadow-emerald-600/25">
+                    <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10" />
+                    <div className="absolute -bottom-10 -left-6 h-28 w-28 rounded-full bg-white/10" />
+                    <div className="relative flex items-center gap-4">
+                      <span className="animate-pop flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-emerald-600 shadow-md">
+                        <Check className="h-8 w-8" strokeWidth={3} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xl font-extrabold">Workout done!</p>
+                        <p className="text-sm text-white/85">That&apos;s today&apos;s training in the bag. Rest well.</p>
+                      </div>
+                    </div>
+                    <div className="relative mt-4 grid grid-cols-3 gap-2 text-center">
+                      {[
+                        [Check, `${endedSets}/${endedPlanned}`, "sets"],
+                        [Timer, `${Math.max(1, Math.round(((ended.finishedAt ?? ended.closedAt ?? Date.now()) - ended.startedAt) / 60000))} min`, "time"],
+                        [Flame, ended.effort ? `${ended.effort}/10` : "–", "effort"],
+                      ].map(([Icon, v, l]) => (
+                        <div key={l} className="rounded-xl bg-white/15 px-2 py-2.5 backdrop-blur">
+                          <Icon className="mx-auto h-4 w-4 text-white/80" />
+                          <p className="mt-1 text-base font-bold tabular-nums">{v}</p>
+                          <p className="text-[11px] text-white/75 uppercase">{l}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : !active && ended ? (
                   <div className="mt-5 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-950">
                     <p className="text-sm font-medium">
                       {endedSets >= endedPlanned ? "Done today" : ended.closedAt ? "Not completed today" : "Ended early today"} · {endedSets}/{endedPlanned} sets
