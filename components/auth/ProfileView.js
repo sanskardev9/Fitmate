@@ -10,6 +10,7 @@ import TargetsForm from "@/components/targets/TargetsForm";
 import FeedbackCard from "@/components/feedback/FeedbackCard";
 import NotificationsCard from "./NotificationsCard";
 import ShareCard from "@/components/common/ShareCard";
+import { focusLabel } from "@/lib/focuses";
 import AdminSwitch from "@/components/admin/AdminSwitch";
 
 const GOAL_LABEL = { lose_fat: "Lose fat", recomposition: "Build muscle & lose fat", build_muscle: "Build muscle", gain_strength: "Get stronger", calisthenics_skills: "Calisthenics skills", maintain: "Maintain", general_fitness: "General fitness" };
@@ -46,6 +47,7 @@ export default function ProfileView() {
     [Weight, "Weight", p.weight_kg ? `${p.weight_kg} kg` : null],
     [Target, "Target weight", p.target_weight_kg ? `${p.target_weight_kg} kg` : null],
     [Goal, "Goal", GOAL_LABEL[p.goal] ?? null],
+    [Target, "Also want to", p.focuses?.length ? p.focuses.map(focusLabel).join(", ") : null],
     [Dumbbell, "Training days", p.training_days_per_week != null ? `${p.training_days_per_week} per week` : null],
   ];
 

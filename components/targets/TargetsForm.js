@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth, displayName } from "@/components/auth/AuthProvider";
 import { cachedProfile, fetchProfile, saveProfile, suggestTargets } from "@/lib/services/profileService";
 import { inputClass, primaryButton, labelClass } from "@/components/common/ui";
+import FocusPicker from "@/components/common/FocusPicker";
+import { COVERED_BY_GOAL } from "@/lib/focuses";
 
 // Optional calorie/protein calculator. Never required: by default targets come from the diet plan.
 export const GOALS = [
@@ -35,6 +37,7 @@ export default function TargetsForm({ onSaved }) {
         weight_kg: p?.weight_kg ?? "",
         target_weight_kg: p?.target_weight_kg ?? "",
         goal: p?.goal ?? "",
+        focuses: p?.focuses ?? [],
         training_days_per_week: p?.training_days_per_week ?? 4,
         full_name: p?.full_name ?? displayName(user),
       });
@@ -68,6 +71,7 @@ export default function TargetsForm({ onSaved }) {
         weight_kg: numOrNull(form.weight_kg),
         target_weight_kg: numOrNull(form.target_weight_kg),
         goal: form.goal || null,
+        focuses: (form.focuses ?? []).filter((x) => x !== COVERED_BY_GOAL[form.goal]),
         training_days_per_week: numOrNull(form.training_days_per_week),
         protein_target_g: s.protein_target_g ?? null,
         calories_target: s.calories_target ?? null,
@@ -94,6 +98,8 @@ export default function TargetsForm({ onSaved }) {
           </button>
         ))}
       </div>
+
+      <FocusPicker goal={form.goal} value={form.focuses ?? []} onChange={(v) => setForm((f) => ({ ...f, focuses: v }))} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <label>

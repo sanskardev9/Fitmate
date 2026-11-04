@@ -12,6 +12,7 @@ import { extractJson } from "@/lib/import/extractJson";
 import { WORKOUT_TEMPLATE, DIET_TEMPLATE } from "@/lib/import/parseJson";
 import { AI_RULES, FENCE, compactJson, copyText } from "./PlanImport";
 import Segmented from "./Segmented";
+import { FOCUSES } from "@/lib/focuses";
 import AiLinks from "./AiLinks";
 
 // A few taps inside FitMate, then ONE prompt; the AI replies with the plan directly, no questions.
@@ -76,6 +77,7 @@ function aboutMe(p) {
     p.target_weight_kg && `Target weight: ${p.target_weight_kg} kg`,
     p.goal && `Goal: ${GOALS[p.goal] ?? p.goal}`,
     p.goal_note && `My goal in my own words: ${p.goal_note}`,
+    p.focuses?.length && `I also want to: ${p.focuses.map((id) => FOCUSES.find((x) => x.id === id)?.ai ?? id).join("; ")}. Build these into the training plan without changing my calorie target`,
     p.experience && `Experience: ${p.experience}`,
     p.calories_target && `Daily calories target: ${p.calories_target} kcal`,
     p.protein_target_g && `Daily protein target: ${p.protein_target_g} g`,

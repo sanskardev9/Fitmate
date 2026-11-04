@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Scale, BicepsFlexed, Dumbbell, Weight, PersonStanding, HeartPulse, ChartNoAxesColumn, PencilLine, Flame, Beef, Wheat, Droplet, Leaf, GlassWater } from "lucide-react";
 import { suggestTargets } from "@/lib/services/profileService";
+import FocusPicker from "./FocusPicker";
+import { COVERED_BY_GOAL } from "@/lib/focuses";
 
 // Minimum details a generated plan needs to be accurate (calories and macros are worked out
 // from them). Asked once at sign-up; also shown in "Make me a plan" if anything is missing.
@@ -176,6 +178,10 @@ export default function AboutYou({ value, onChange, error }) {
           </div>
 
           <div className="mt-5">
+            <FocusPicker goal={value.goal} value={value.focuses ?? []} onChange={(v) => set("focuses", v)} />
+          </div>
+
+          <div className="mt-5">
             <span className={label}>
               Target weight <span className="font-normal tracking-normal normal-case">(optional)</span>
             </span>
@@ -200,6 +206,7 @@ export const aboutFromProfile = (p) => ({
   target_weight_kg: p?.target_weight_kg ?? "",
   goal: p?.goal ?? "",
   goal_note: p?.goal_note ?? "",
+  focuses: p?.focuses ?? [],
   days: p?.training_days_per_week != null ? String(p.training_days_per_week) : "",
 });
 
@@ -218,6 +225,8 @@ export async function saveAbout({ userId, name, about, trainingDays }) {
     target_weight_kg: Number(about.target_weight_kg) || null,
     goal: about.goal,
     goal_note: String(about.goal_note ?? "").trim() || null,
+    // Drop an extra the main goal already covers (e.g. goal "Calisthenics skills" + extra "skills").
+    focuses: (about.focuses ?? []).filter((x) => x !== COVERED_BY_GOAL[about.goal]),
     training_days_per_week: Number(about.days),
   };
   const t = suggestTargets({ ...fields, training_days_per_week: Number(about.days) ?? trainingDays });

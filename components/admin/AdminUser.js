@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useDeleteUser } from "./useDeleteUser";
 import { Flame, CalendarCheck, Dumbbell, Utensils, Layers, ChevronRight, Trash2 } from "lucide-react";
 import { useAdminData, adminApi } from "./AdminShell";
+import { focusLabel } from "@/lib/focuses";
 import { card, GOAL, lastDays, fullDate, ago, userName, Avatar, PageTitle, Stat, Section, Skeleton } from "./ui";
 
 const BACK = { href: "/admin/users", label: "Users" };
@@ -67,6 +68,7 @@ export default function AdminUser({ id }) {
             {[
               ["Goal", GOAL[u.goal] ?? "–"],
               ["Own goal", u.goal_note || "–"],
+              ["Also wants", u.focuses?.length ? u.focuses.map(focusLabel).join(", ") : "–"],
               ["Gender", u.gender ?? "–"],
               ["Age", age ?? "–"],
               ["Height", u.height_cm ? `${u.height_cm} cm` : "–"],
