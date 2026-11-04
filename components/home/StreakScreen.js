@@ -149,7 +149,7 @@ function Freezes({ streak }) {
     // Folded by default: the slots and the count. Open for progress and how freezes work.
     <details className="group mt-3 overflow-hidden rounded-3xl border border-sky-500/20 bg-gradient-to-br from-sky-500/10 via-white to-white p-4 sm:p-5 dark:via-neutral-900 dark:to-neutral-900">
       <summary className="flex cursor-pointer list-none items-center gap-4 [&::-webkit-details-marker]:hidden">
-        <div className="flex shrink-0 gap-2">
+        <div className="order-2 flex shrink-0 gap-2">
           {Array.from({ length: MAX_FREEZES }, (_, i) =>
             i < freezes ? (
               <span key={i} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-b from-sky-300 to-sky-500 text-white shadow-md shadow-sky-500/30 ring-1 ring-white/40">
@@ -162,13 +162,13 @@ function Freezes({ streak }) {
             ),
           )}
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="order-1 min-w-0 flex-1">
           <p className="font-bold">
             {freezes} of {MAX_FREEZES} streak freezes
           </p>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">{full ? "You're holding the most you can." : `Next one in ${nextFreezeIn} ${nextFreezeIn === 1 ? "day" : "days"}`}</p>
         </div>
-        <ChevronDown className="h-5 w-5 shrink-0 text-neutral-400 transition-transform group-open:rotate-180" />
+        <ChevronDown className="order-3 h-5 w-5 shrink-0 text-neutral-400 transition-transform group-open:rotate-180" />
       </summary>
 
       {!full && (
