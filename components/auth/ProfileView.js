@@ -9,6 +9,7 @@ import { SyncStatus } from "./AccountButton";
 import TargetsForm from "@/components/targets/TargetsForm";
 import FeedbackCard from "@/components/feedback/FeedbackCard";
 import NotificationsCard from "./NotificationsCard";
+import ShareCard from "@/components/common/ShareCard";
 import AdminSwitch from "@/components/admin/AdminSwitch";
 
 const GOAL_LABEL = { lose_fat: "Lose fat", recomposition: "Build muscle & lose fat", build_muscle: "Build muscle", gain_strength: "Get stronger", calisthenics_skills: "Calisthenics skills", maintain: "Maintain", general_fitness: "General fitness" };
@@ -91,6 +92,8 @@ export default function ProfileView() {
       </section>
 
       <NotificationsCard />
+
+      <ShareCard />
 
       <FeedbackCard />
 

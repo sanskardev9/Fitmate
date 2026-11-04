@@ -9,7 +9,7 @@ import { loadStreak } from "@/lib/services/streak";
 // changing plans), so reminders never nag about a day you've already done.
 export default function StreakReporter() {
   const signal = useLiveQuery(
-    () => Promise.all([db.workoutSessions.count(), db.sessionSets.count(), db.mealLogs.count(), db.workoutPlans.count(), db.dietPlans.count(), db.preferences.where("key").anyOf("activeWorkoutPlanId", "activeDietPlanId").toArray()]).then((x) => JSON.stringify(x)),
+    () => Promise.all([db.workoutSessions.count(), db.sessionSets.count(), db.mealLogs.count(), db.workoutPlans.count(), db.dietPlans.count(), db.preferences.where("key").anyOf("activeWorkoutPlanId", "activeDietPlanId", `mealSwaps_${new Date().toLocaleDateString("en-CA")}`).toArray()]).then((x) => JSON.stringify(x)),
     [],
   );
   useEffect(() => {
