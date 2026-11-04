@@ -84,6 +84,8 @@ function aboutMe(p) {
     p.experience && `Experience: ${p.experience}`,
     p.calories_target && `Daily calories target: ${p.calories_target} kcal`,
     p.protein_target_g && `Daily protein target: ${p.protein_target_g} g`,
+    // Fat about 25% of calories, carbs the rest (same split as FitMate's own targets).
+    p.calories_target && `Daily fat target: ${Math.round((p.calories_target * 0.25) / 9)} g; carbs: about ${Math.max(0, Math.round((p.calories_target - (Number(p.protein_target_g) || 0) * 4 - p.calories_target * 0.25) / 4))} g`,
   ].filter(Boolean);
 }
 
@@ -147,7 +149,7 @@ export function buildPrompt(kind, profile, answers, extra, others = {}, training
           "- Use my days per week (leave rest days out), fit each session into my time, use only my equipment, and work around any pain. Progression cues in notes.",
         ].join("\n")
       : [
-          `- Daily protein must hit my target every day; calories within 5% of my target${profile?.calories_target ? "" : " (work both out from my details and goal)"}.`,
+          `- Daily protein must hit my target every day; calories within 5% of my target${profile?.calories_target ? "" : " (work both out from my details and goal)"}. Fat and carbs within 10% of their targets (fat about 25% of calories): add healthy fats (peanuts, nuts, seeds, ghee or oil in cooking, full-fat curd) when a day is low, don't just add more carbs.`,
           variety === "Same every day"
             ? training
               ? "- Two day types: one training-day menu (weekdays = my training days) and one rest-day menu (weekdays = my rest days)."

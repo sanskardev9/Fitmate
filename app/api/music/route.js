@@ -10,7 +10,8 @@ export async function GET(request) {
   if (error) return error;
   const raw = String(new URL(request.url).searchParams.get("q") ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
   if (raw.length < 2) return Response.json({ results: [] });
-  const key = raw.toLowerCase();
+  // v2: results are limited to songs playable outside YouTube (older cached lists had blocked ones).
+  const key = `v2:${raw.toLowerCase()}`;
 
   const { data: hit } = await admin.from("yt_search_cache").select("results, fetched_at").eq("query_key", key).maybeSingle();
   if (hit && Date.now() - new Date(hit.fetched_at) < TTL_MS) return Response.json({ results: hit.results, cached: true });
@@ -25,7 +26,7 @@ export async function GET(request) {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) return Response.json({ error: "Music search isn't set up." }, { status: 503 });
   try {
-    const q = new URLSearchParams({ part: "snippet", type: "video", videoEmbeddable: "true", videoCategoryId: "10", safeSearch: "moderate", maxResults: "15", q: raw, key: apiKey });
+    const q = new URLSearchParams({ part: "snippet", type: "video", videoEmbeddable: "true", videoSyndicated: "true", videoCategoryId: "10", safeSearch: "moderate", maxResults: "15", q: raw, key: apiKey });
     const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${q}`, { signal: AbortSignal.timeout(7000) });
     if (!res.ok) return Response.json({ error: "Couldn't search right now." }, { status: 502 });
     const json = await res.json();

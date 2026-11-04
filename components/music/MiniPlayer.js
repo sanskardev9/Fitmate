@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { X, SkipForward, SkipBack, ListMusic, Maximize2, Minimize2, ChevronDown, Play, Pause } from "lucide-react";
 import { useMusic, stopMusic, openMusic, restoreMusic, savePosition } from "@/lib/music";
+import { toast } from "@/lib/toast";
 
 // Floating player that keeps playing across pages. It's YouTube's own player (free; YouTube's
 // rules require the video to stay visible). The rest of the list plays automatically after it;
@@ -45,6 +46,14 @@ export default function MiniPlayer() {
       try {
         d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
       } catch {
+        return;
+      }
+      // The owner doesn't allow this song outside YouTube (errors 101 / 150 / 153).
+      if (d?.event === "onError") {
+        if ([100, 101, 150, 153].includes(Number(d.info))) {
+          toast.info("That song can't play outside YouTube, so it was skipped.");
+          frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "nextVideo", args: [] }), "*");
+        }
         return;
       }
       const info = d?.info;
@@ -166,7 +175,9 @@ export default function MiniPlayer() {
 
   const rest = queue.slice(index + 1, index + 30).map((t) => t.id).join(",");
   const origin = typeof window === "undefined" ? "" : `&origin=${encodeURIComponent(window.location.origin)}`;
-  const list = radio ? `&list=RD${track.id}` : rest ? `&playlist=${rest}` : "";
+  // YouTube starts a playlist= list at its first entry (not the song in the link), so the chosen
+  // song goes first, or it would play the one after it.
+  const list = radio ? `&list=RD${track.id}` : rest ? `&playlist=${track.id},${rest}` : "";
   const src = `https://www.youtube-nocookie.com/embed/${track.id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1${startAt ? `&start=${startAt}` : ""}${origin}${list}`;
   const command = (func) => frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args: [] }), "*");
   const listen = () => frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1, channel: "widget" }), "*");

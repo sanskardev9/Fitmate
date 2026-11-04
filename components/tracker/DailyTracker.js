@@ -12,7 +12,7 @@ import TargetsForm from "@/components/targets/TargetsForm";
 import EndWorkoutButton from "@/components/workout/EndWorkoutButton";
 import FinishedActions from "@/components/workout/FinishedActions";
 import RecipeVideo from "@/components/diet/RecipeVideo";
-import { Repeat2, Plus, Trash2, X } from "lucide-react";
+import { Repeat2, Plus, Trash2, X, Check } from "lucide-react";
 import AddFoodSheet from "@/components/diet/AddFoodSheet";
 import MealSwap from "@/components/diet/MealSwap";
 import { friendlyRecipe } from "@/lib/diet/groceries";
@@ -251,42 +251,69 @@ export function Nutrition({ data, title = "Today's meals" }) {
   const [calc, setCalc] = useState(false);
   const custom = prefs.proteinTargetG != null || prefs.caloriesTarget != null;
 
-  const bars = [
-    ["Protein", eaten.proteinG, targets.proteinG, "g", "bg-emerald-500"],
-    ["Calories", eaten.calories, targets.calories, "kcal", "bg-amber-500"],
-    ["Carbs", eaten.carbsG, targets.carbsG, "g", "bg-sky-500"],
-    ["Fat", eaten.fatG, targets.fatG, "g", "bg-rose-500"],
-  ].filter(([label, , goal]) => goal > 0 || label === "Protein");
-  // Protein and calories full width; carbs and fat side by side, same bars. Over target (except
-  // protein) by more than 10% shows in red with how much over.
-  const mainBars = bars.filter(([l]) => l === "Protein" || l === "Calories");
-  const minor = bars.filter(([l]) => l === "Carbs" || l === "Fat");
-  const macro = ([label, value, goal, unit, color], small) => {
-    const pct = goal ? Math.min(100, Math.round((value / goal) * 100)) : 0;
-    const left = goal ? Math.round(goal - value) : null;
-    const over = goal && label !== "Protein" && value > goal * 1.1;
-    return (
-      <div key={label} className="min-w-0">
-        <div className={`flex items-baseline justify-between gap-2 ${small ? "text-xs" : "text-sm"}`}>
-          <span className="font-medium">{label}</span>
-          <span className="truncate text-neutral-500 tabular-nums">
-            <b className={over ? "text-rose-600 dark:text-rose-400" : "text-neutral-900 dark:text-neutral-100"}>{Math.round(value)}</b> / {goal ? Math.round(goal) : "–"} {unit}
-            {over ? <span className="ml-1.5 text-xs text-rose-600 dark:text-rose-400">· {Math.round(value - goal)} over</span> : left > 0 ? <span className="ml-1.5 text-xs">· {left} left</span> : null}
-          </span>
-        </div>
-        <div className={`mt-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800 ${small ? "h-1.5" : "h-2"}`}>
-          <div className={`h-full rounded-full ${over ? "bg-rose-500" : color} transition-[width] duration-700 ease-out`} style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-    );
+  // Calories as a ring, protein / carbs / fat as rows. Each macro keeps its own colour; the text says
+  // how it's going: a tick when on target (90-115%, protein 90%+), "+X" over, "X left" under.
+  const status = (value, goal, isProtein) => {
+    if (!goal) return { hit: false, over: false, text: "" };
+    const r = value / goal;
+    const over = !isProtein && r > 1.15;
+    const hit = !over && r >= 0.9;
+    const diff = Math.round(Math.abs(goal - value));
+    return { hit, over, text: over || (hit && value > goal) ? `+${diff}` : hit ? "" : `${diff} left` };
   };
+  const tiles = [
+    ["Calories", eaten.calories, targets.calories, "kcal", "stroke-orange-500", false],
+    ["Protein", eaten.proteinG, targets.proteinG, "g", "stroke-emerald-500", true],
+    ["Carbs", eaten.carbsG, targets.carbsG, "g", "stroke-sky-500", false],
+    ["Fat", eaten.fatG, targets.fatG, "g", "stroke-violet-500", false],
+  ].filter(([l, , goal]) => goal > 0 || l === "Protein" || l === "Calories");
 
   return (
     <section className={card}>
       <Heading icon="leaf" title={title} sub={today.meals.length ? `${today.eatenPlanned}/${today.meals.length} meals eaten` : "No meals planned today"} />
 
-      <div className="mt-5 space-y-3">{mainBars.map((b) => macro(b, false))}</div>
-      {minor.length > 0 && <div className="mt-3 grid grid-cols-2 gap-4">{minor.map((b) => macro(b, true))}</div>}
+      {/* Four tiles: a small ring each, eaten / target, and how it's going. */}
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {tiles.map(([label, value, goal, unit, stroke, isProtein]) => {
+          const st = status(value, goal, isProtein);
+          const pct = goal ? Math.min(100, (value / goal) * 100) : 0;
+          return (
+            <div key={label} className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-3 dark:bg-neutral-950">
+              <div className="relative h-12 w-12 shrink-0">
+                <svg viewBox="0 0 48 48" className="h-full w-full -rotate-90">
+                  <circle cx="24" cy="24" r="20" fill="none" strokeWidth="5" className="stroke-neutral-200 dark:stroke-neutral-800" />
+                  <circle cx="24" cy="24" r="20" fill="none" strokeWidth="5" strokeLinecap="round" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - pct} className={`${stroke} transition-[stroke-dashoffset] duration-700 ease-out`} />
+                </svg>
+                {st.hit && (
+                  <span className="absolute inset-0 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <Check className="h-4 w-4" strokeWidth={3} />
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-neutral-500">{label}</p>
+                <p className="text-lg leading-tight font-bold tabular-nums">{Math.round(value)}</p>
+                <p className="text-[11px] text-neutral-500 tabular-nums">
+                  of {goal ? Math.round(goal) : "–"} {unit}
+                </p>
+                <p className={`h-4 text-[11px] font-medium tabular-nums ${st.over ? "text-amber-600 dark:text-amber-400" : st.hit ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-500"}`}>{st.hit && !st.text ? "On target" : st.text}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {(() => {
+        // Following the plan still leaves fat short: the plan itself is low. Suggest a small top-up.
+        const planFat = data.plannedNutrition?.fatG ?? 0;
+        const short = Math.round((targets.fatG || 0) - planFat);
+        if (!planFat || short < Math.max(5, (targets.fatG || 0) * 0.1)) return null;
+        const peanuts = Math.min(40, Math.round(((short / 0.5) * 1) / 5) * 5); // peanuts ~50% fat
+        return (
+          <p className="mt-3 rounded-xl bg-violet-500/10 px-3.5 py-2.5 text-xs leading-relaxed text-violet-900 dark:text-violet-200">
+            <b className="font-semibold">Your plan is {short} g low on fat today.</b> Top it up with about {peanuts} g peanuts, 1 tbsp ghee or oil in cooking, or full-fat curd instead of low-fat. Use &ldquo;Add to this meal&rdquo; to log it.
+          </p>
+        );
+      })()}
 
       {today.meals.length > 0 && today.eatenPlanned === 0 && <p className="mt-5 -mb-2 text-xs text-neutral-500">Tap ✓ when you eat a meal. Tap a meal to see its recipe and video.</p>}
       {today.meals.length > 0 && (

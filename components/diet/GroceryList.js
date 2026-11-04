@@ -7,6 +7,20 @@ import { ChevronLeft, ShoppingBasket, Share2, Copy, Check, RotateCcw, Sparkles }
 import { db } from "@/lib/db/dexie";
 import { getPreferences } from "@/lib/services/preferencesService";
 import { GROUPS } from "@/lib/diet/groceries";
+import { rotationFor, rotationWeek } from "@/lib/diet/rotation";
+
+// The week you're shopping for: this week, or next week on a Sunday.
+const shoppingDate = () => {
+  const d = new Date();
+  if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+  return d;
+};
+// A short id for a week's menu, so each rotated menu keeps its own list.
+const menuId = (meals) => {
+  let h = 5381;
+  for (const c of meals.map((m) => m.name).join("|")) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0;
+  return h.toString(36);
+};
 import { groceriesOf } from "@/lib/import/parseJson";
 import { extractJson } from "@/lib/import/extractJson";
 import { AI_RULES, FENCE, copyText } from "@/components/common/PlanImport";
@@ -52,11 +66,20 @@ export default function GroceryList() {
     if (!prefs.activeDietPlanId) return { none: true };
     const plan = await db.dietPlans.get(prefs.activeDietPlanId);
     if (!plan) return { none: true };
-    const [days, meals] = await Promise.all([db.dietDays.where("planId").equals(plan.id).sortBy("order"), db.meals.where("planId").equals(plan.id).toArray()]);
-    return { plan, days, meals };
+    const [days, baseMeals] = await Promise.all([db.dietDays.where("planId").equals(plan.id).sortBy("order"), db.meals.where("planId").equals(plan.id).toArray()]);
+    // This week's menu (weekly rotation): each meal as planned, or this week's alternative.
+    const week = await rotationWeek(plan.id, shoppingDate());
+    const meals = baseMeals.map((m) => {
+      const alt = rotationFor(m, week);
+      return alt ? { ...m, name: alt.name, serving: alt.serving ?? "", recipe: alt.recipe || "" } : m;
+    });
+    const rotated = meals.some((m, i) => m.name !== baseMeals[i].name);
+    // The plan's own list is for the menu as written; a rotated week has its own list (once made).
+    const saveKey = rotated ? menuId(meals) : null;
+    return { plan, days, meals, rotated, saveKey };
   }, []);
 
-  const items = useMemo(() => data?.plan?.groceries ?? [], [data]);
+  const items = useMemo(() => (data?.saveKey ? data?.plan?.groceriesByMenu?.[data.saveKey] : data?.plan?.groceries) ?? [], [data]);
   const groups = useMemo(() => {
     const order = [...GROUPS.map(([g]) => g), "Other"];
     const by = {};
@@ -64,7 +87,7 @@ export default function GroceryList() {
     return order.filter((g) => by[g]).map((g) => ({ name: g, items: by[g] }));
   }, [items]);
 
-  const storeKey = data?.plan ? `fitmate:groceries:plan:${data.plan.id}` : null;
+  const storeKey = data?.plan ? `fitmate:groceries:plan:${data.plan.id}${data.saveKey ? `:${data.saveKey}` : ""}` : null;
   const [checked, setChecked] = useState({});
   const [copied, setCopied] = useState(false);
   const [shareNote, setShareNote] = useState("");
@@ -136,7 +159,14 @@ export default function GroceryList() {
       </>
     );
 
-  if (!items.length) return (<>{header}<GetList plan={data.plan} days={data.days} meals={data.meals} /></>);
+  if (!items.length)
+    return (
+      <>
+        {header}
+        {data.rotated && <p className="mb-3 rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300">New dishes this week, so a new list. Make it once, and it comes back whenever this menu does.</p>}
+        <GetList plan={data.plan} days={data.days} meals={data.meals} saveKey={data.saveKey} />
+      </>
+    );
 
   const all = groups.flatMap((g) => g.items.map((it) => `${g.name}|${it.item}`));
   const done = all.filter((k) => checked[k]).length;
@@ -218,7 +248,7 @@ export default function GroceryList() {
 }
 
 // Older plan without a grocery list: ask the AI once, save its reply with the plan.
-function GetList({ plan, days, meals }) {
+function GetList({ plan, days, meals, saveKey = null }) {
   const [copied, setCopied] = useState(false);
   const [reply, setReply] = useState("");
   const [error, setError] = useState("");
@@ -232,7 +262,10 @@ function GetList({ plan, days, meals }) {
       const list = groceriesOf(Array.isArray(parsed) ? parsed : parsed?.groceries);
       if (!list.length) throw new Error("No grocery items found in that reply. Copy the whole reply, including the code block.");
       setSaving(true);
-      await db.dietPlans.update(plan.id, { groceries: list, updatedAt: Date.now() });
+      if (saveKey) {
+        const fresh = await db.dietPlans.get(plan.id);
+        await db.dietPlans.update(plan.id, { groceriesByMenu: { ...(fresh?.groceriesByMenu ?? {}), [saveKey]: list }, updatedAt: Date.now() });
+      } else await db.dietPlans.update(plan.id, { groceries: list, updatedAt: Date.now() });
     } catch (e) {
       setError(e.message);
     } finally {
