@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { X, ChevronLeft, ChevronRight, CircleCheck, Trophy, Snowflake } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, CircleCheck, Trophy, Snowflake, ChevronDown } from "lucide-react";
 import { loadStreak, monthStatuses, MAX_FREEZES, FREEZE_EVERY } from "@/lib/services/streak";
 import { Flame } from "./HomeToday";
 
@@ -146,8 +146,9 @@ function Freezes({ streak }) {
   const full = nextFreezeIn == null;
   const done = full ? FREEZE_EVERY : FREEZE_EVERY - nextFreezeIn; // days towards the next freeze
   return (
-    <section className="mt-3 overflow-hidden rounded-3xl border border-sky-500/20 bg-gradient-to-br from-sky-500/10 via-white to-white p-4 sm:p-5 dark:via-neutral-900 dark:to-neutral-900">
-      <div className="flex items-center gap-4">
+    // Folded by default: the slots and the count. Open for progress and how freezes work.
+    <details className="group mt-3 overflow-hidden rounded-3xl border border-sky-500/20 bg-gradient-to-br from-sky-500/10 via-white to-white p-4 sm:p-5 dark:via-neutral-900 dark:to-neutral-900">
+      <summary className="flex cursor-pointer list-none items-center gap-4 [&::-webkit-details-marker]:hidden">
         <div className="flex shrink-0 gap-2">
           {Array.from({ length: MAX_FREEZES }, (_, i) =>
             i < freezes ? (
@@ -165,9 +166,10 @@ function Freezes({ streak }) {
           <p className="font-bold">
             {freezes} of {MAX_FREEZES} streak freezes
           </p>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">{full ? "You're holding the most you can." : freezes ? "Ready to save your streak." : "None yet. Keep your streak going to earn one."}</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">{full ? "You're holding the most you can." : `Next one in ${nextFreezeIn} ${nextFreezeIn === 1 ? "day" : "days"}`}</p>
         </div>
-      </div>
+        <ChevronDown className="h-5 w-5 shrink-0 text-neutral-400 transition-transform group-open:rotate-180" />
+      </summary>
 
       {!full && (
         <div className="mt-4">
@@ -188,7 +190,7 @@ function Freezes({ streak }) {
       <p className="mt-4 text-xs leading-relaxed text-neutral-500">
         Miss a planned day and a freeze is used by itself, so your streak survives. You earn one for every {FREEZE_EVERY} days in a row and can hold up to {MAX_FREEZES}.
       </p>
-    </section>
+    </details>
   );
 }
 
