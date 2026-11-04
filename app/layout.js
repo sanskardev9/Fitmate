@@ -2,6 +2,7 @@ import "./globals.css";
 import ServiceWorkerRegister from "@/components/common/ServiceWorkerRegister";
 import PullToRefresh from "@/components/common/PullToRefresh";
 import MiniPlayer from "@/components/music/MiniPlayer";
+import Toaster from "@/components/common/Toaster";
 import MusicPicker from "@/components/music/MusicPicker";
 import Splash from "@/components/common/Splash";
 import { AuthProvider } from "@/components/auth/AuthProvider";
@@ -48,6 +49,7 @@ export default function RootLayout({ children }) {
         <ServiceWorkerRegister />
         <PullToRefresh />
         <MiniPlayer />
+        <Toaster />
         <MusicPicker />
       </body>
     </html>

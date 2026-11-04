@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase/client";
 import { primaryButton, labelClass } from "@/components/common/ui";
 import PasswordInput from "./PasswordInput";
 import { CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 const field = "h-12 w-full rounded-xl border border-neutral-300 bg-transparent px-4 text-base outline-none focus:border-emerald-500 dark:border-neutral-700";
 
@@ -59,11 +60,12 @@ export default function ResetPasswordForm() {
     try {
       const r = await post("/api/auth/reset/send", { email: to });
       setInfo(r.message);
+      toast.info(`Code sent to ${to}`);
       setStep("code");
       setCooldown(60);
       setTimeout(() => boxes.current[0]?.focus(), 50);
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
       setStep("code");
     } finally {
       setBusy(false);
@@ -72,14 +74,18 @@ export default function ResetPasswordForm() {
 
   async function verify(e, entered = digits.join("")) {
     e?.preventDefault();
-    if (entered.length !== 6) return setError("Enter all 6 digits.");
+    if (entered.length !== 6) return toast.error("Enter all 6 digits.");
     setBusy(true);
     setError("");
     try {
       await post("/api/auth/reset/verify", { email, code: entered, checkOnly: true });
+      toast.clear();
+      toast.success("Code verified");
       setStep("password");
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
+      setDigits(Array(6).fill(""));
+      setTimeout(() => boxes.current[0]?.focus(), 50);
     } finally {
       setBusy(false);
     }
@@ -149,14 +155,24 @@ export default function ResetPasswordForm() {
   }
 
   const popup = result && (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-5 backdrop-blur-sm">
-      <div role="alertdialog" aria-label={result.ok ? "Password changed" : "Password not changed"} className="animate-fade-up w-full max-w-sm rounded-3xl bg-[var(--background)] p-6 text-center shadow-2xl [animation-duration:200ms]">
-        <span className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${result.ok ? "bg-emerald-500/15 text-emerald-600" : "bg-rose-500/15 text-rose-600"}`}>
-          {result.ok ? <CheckCircle2 className="h-8 w-8" /> : <XCircle className="h-8 w-8" />}
-        </span>
-        <h2 className="mt-4 text-lg font-semibold">{result.ok ? "Password changed" : "Couldn't change password"}</h2>
-        <p className="mt-1 text-sm text-neutral-500">{result.message}</p>
-        <button type="button" onClick={closeResult} className={`${primaryButton} mt-5 w-full`}>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-5 backdrop-blur-md">
+      <div role="alertdialog" aria-label={result.ok ? "Password changed" : "Password not changed"} className="animate-fade-up relative w-full max-w-sm overflow-hidden rounded-3xl bg-[var(--background)] p-7 text-center shadow-2xl ring-1 ring-black/5 [animation-duration:220ms] dark:ring-white/10">
+        <div className={`pointer-events-none absolute -top-20 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full blur-3xl ${result.ok ? "bg-emerald-500/25" : "bg-rose-500/25"}`} />
+        <div className="relative mx-auto h-20 w-20">
+          <span className={`ring-out absolute inset-0 rounded-full ${result.ok ? "bg-emerald-500/40" : "bg-rose-500/40"}`} />
+          <span className={`pop-in relative flex h-20 w-20 items-center justify-center rounded-full text-white shadow-lg ${result.ok ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/40" : "bg-gradient-to-br from-rose-400 to-rose-600 shadow-rose-500/40"}`}>
+            {result.ok ? (
+              <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1" className="animate-draw [animation-delay:150ms]" style={{ strokeDasharray: 1 }} />
+              </svg>
+            ) : (
+              <XCircle className="h-10 w-10" />
+            )}
+          </span>
+        </div>
+        <h2 className="relative mt-5 text-xl font-semibold">{result.ok ? "Password changed" : "Couldn't change password"}</h2>
+        <p className="relative mt-1.5 text-sm text-neutral-500">{result.message}</p>
+        <button type="button" onClick={closeResult} className={`relative mt-6 w-full rounded-2xl py-3.5 text-sm font-semibold text-white transition-colors ${result.ok ? "bg-emerald-600 hover:bg-emerald-700" : "bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:text-neutral-900"}`}>
           {result.ok ? "Continue" : "Try again"}
         </button>
       </div>
@@ -167,11 +183,7 @@ export default function ResetPasswordForm() {
     return (
       <form onSubmit={savePassword} className="animate-fade-up">
         {popup}
-        <div role="status" className="animate-fade-up flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-emerald-800 dark:text-emerald-200">
-          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-sm font-semibold">Code verified successfully</span>
-        </div>
-        <span className="mt-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
           <ShieldCheck className="h-6 w-6" />
         </span>
         <h1 className="mt-4 text-2xl font-semibold tracking-tight">Choose a new password</h1>
