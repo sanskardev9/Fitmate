@@ -301,3 +301,13 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .toast-in, .pop-in, .ring-out { animation: none; }
 }
+
+/* Landing: equaliser bars on the music mock. */
+@keyframes eq {
+  0%, 100% { height: 30%; }
+  50% { height: 100%; }
+}
+.eq-bar {
+  height: 60%;
+  animation: eq 0.9s ease-in-out infinite;
+}
