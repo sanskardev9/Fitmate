@@ -111,7 +111,7 @@ export default function AdminShell({ children }) {
             <div className="min-w-0 flex-1">
               <AccountButton variant="sidebar" />
             </div>
-            <ThemeToggle />
+            <ThemeToggle withSystem placement="up" />
           </div>
         </div>
       </aside>
@@ -124,7 +124,7 @@ export default function AdminShell({ children }) {
             <span className="font-bold">Admin</span>
           </Link>
           <AdminSwitch compact="header" />
-          <ThemeToggle />
+          <ThemeToggle withSystem />
           <AccountButton variant="header" />
         </div>
       </header>

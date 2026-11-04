@@ -53,7 +53,7 @@ export default function BottomNav() {
             <div className="min-w-0 flex-1">
               <AccountButton variant="sidebar" />
             </div>
-            <ThemeToggle />
+            <ThemeToggle withSystem placement="up" />
           </div>
         </div>
       </aside>

@@ -18,7 +18,7 @@ export default function DashboardLayout({ children }) {
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <AdminSwitch compact="header" />
-            <ThemeToggle />
+            <ThemeToggle withSystem />
             <AccountButton variant="header" />
           </div>
         </header>

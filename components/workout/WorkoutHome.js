@@ -35,6 +35,12 @@ async function load() {
 }
 
 // Workout tab: resume / start today's session, pick another day, see recent sessions.
+const SECTION_STYLE = [
+  { id: "warmup", label: "Warm-up", unit: "move", bar: "bg-amber-500", text: "text-amber-700 dark:text-amber-400", line: "border-amber-500/30" },
+  { id: "main", label: "Main set", unit: "exercise", bar: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400", line: "border-emerald-500/30" },
+  { id: "cooldown", label: "Cool-down", unit: "move", bar: "bg-sky-500", text: "text-sky-700 dark:text-sky-400", line: "border-sky-500/30" },
+];
+
 export default function WorkoutHome() {
   const [formOpen, setFormOpen] = useState(null); // exercise whose form video is open
   const [foldOpen, setFoldOpen] = useState({}); // warm-up / cool-down expanded?
@@ -70,41 +76,37 @@ export default function WorkoutHome() {
               <>
                 <h2 className="mt-1 text-xl font-semibold">{today.name}</h2>
                 <ul className="mt-4 divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {/* Warm-up and cool-down fold into one line each, so the main work stands out. */}
-                  {["warmup", "main", "cooldown"].map((sec) => {
+                  {/* Three sections, one look: colour bar, name, count, arrow. Main set starts open. */}
+                  {SECTION_STYLE.map(({ id: sec, label, unit, bar, text, line }) => {
                     const items = inferSections(todayExercises).filter((e) => (e.section ?? "main") === sec);
                     if (!items.length) return null;
-                    const rows = items.map((e) => (
-                        <li key={e.id} className="py-2.5 text-sm">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="min-w-0 font-medium break-words">{e.name}</span>
-                            <span className="flex shrink-0 items-center gap-2">
-                              <span className="text-neutral-500 tabular-nums">{formatTarget(e)}</span>
-                              <FormVideoButton open={formOpen === e.id} onToggle={() => setFormOpen((v) => (v === e.id ? null : e.id))} />
-                            </span>
-                          </div>
-                          {formOpen === e.id && <FormVideo name={e.name} />}
-                        </li>
-                    ));
-                    if (sec === "main")
-                      return [
-                        <li key="main-head" className="flex items-center gap-2 pt-3 pb-1 text-sm">
-                          <span className="h-4 w-1 rounded-full bg-emerald-500" />
-                          <span className="font-semibold text-emerald-700 dark:text-emerald-400">Main set</span>
-                          <span className="text-neutral-500">· {items.length} {items.length === 1 ? "exercise" : "exercises"}</span>
-                        </li>,
-                        ...rows,
-                      ];
-                    const open = foldOpen[sec];
+                    const open = foldOpen[sec] ?? sec === "main";
                     return (
-                      <li key={sec} className="py-1">
-                        <button type="button" onClick={() => setFoldOpen((o) => ({ ...o, [sec]: !o[sec] }))} aria-expanded={open} className="flex w-full items-center justify-between gap-3 rounded-lg py-1.5 text-left text-sm">
-                          <span className="font-semibold text-sky-600 dark:text-sky-400">
-                            {sec === "warmup" ? "Warm-up" : "Cool-down"} <span className="font-normal text-neutral-500">· {items.length} {items.length === 1 ? "move" : "moves"}</span>
+                      <li key={sec} className="py-1.5">
+                        <button type="button" onClick={() => setFoldOpen((o) => ({ ...o, [sec]: !open }))} aria-expanded={open} className="flex w-full items-center gap-2 rounded-lg py-1.5 text-left text-sm">
+                          <span className={`h-4 w-1 shrink-0 rounded-full ${bar}`} />
+                          <span className={`font-semibold ${text}`}>{label}</span>
+                          <span className="text-neutral-500">
+                            · {items.length} {items.length === 1 ? unit : `${unit}s`}
                           </span>
-                          <ChevronDown className={`h-4 w-4 shrink-0 text-neutral-400 transition-transform ${open ? "rotate-180" : ""}`} />
+                          <ChevronDown className={`ml-auto h-4 w-4 shrink-0 text-neutral-400 transition-transform ${open ? "rotate-180" : ""}`} />
                         </button>
-                        {open && <ul className="animate-fade-up divide-y divide-neutral-100 pl-3 [animation-duration:200ms] dark:divide-neutral-800">{rows}</ul>}
+                        {open && (
+                          <ul className={`animate-fade-up mt-1 ml-0.5 divide-y divide-neutral-100 border-l-2 pl-3 [animation-duration:200ms] dark:divide-neutral-800 ${line}`}>
+                            {items.map((e) => (
+                              <li key={e.id} className="py-2.5 text-sm">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="min-w-0 font-medium break-words">{e.name}</span>
+                                  <span className="flex shrink-0 items-center gap-2">
+                                    <span className="text-neutral-500 tabular-nums">{formatTarget(e)}</span>
+                                    <FormVideoButton open={formOpen === e.id} onToggle={() => setFormOpen((v) => (v === e.id ? null : e.id))} />
+                                  </span>
+                                </div>
+                                {formOpen === e.id && <FormVideo name={e.name} />}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </li>
                     );
                   })}
