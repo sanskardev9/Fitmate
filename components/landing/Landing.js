@@ -143,14 +143,14 @@ function PrimaryCta({ signedIn, children, className = "" }) {
 
 function Hero({ signedIn }) {
   return (
-    <section id="top" className="relative isolate flex min-h-[100svh] flex-col justify-center px-5 pt-24 pb-12 lg:min-h-0 lg:justify-start lg:pt-32 lg:pb-24">
+    <section id="top" className="relative isolate flex min-h-[100svh] flex-col justify-center px-5 pt-24 pb-12 lg:pt-20 lg:pb-8">
       <Backdrop />
-      <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1fr_1fr]">
+      <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
         <div className="min-w-0 text-center lg:text-left">
-          <h1 className="animate-fade-up mt-5 text-[2.6rem] leading-[1.05] font-semibold tracking-tight [animation-delay:100ms] sm:text-6xl">
+          <h1 className="animate-fade-up text-[2.6rem] leading-[1.05] font-semibold tracking-tight text-balance [animation-delay:100ms] sm:text-6xl lg:text-[3.5rem] xl:text-[3.75rem]">
             You made the plan.
             <br />
-            <span className="text-gradient animate-shimmer">Following it is the hard part.</span>
+            <span className="text-gradient animate-shimmer">Following it is the&nbsp;hard&nbsp;part.</span>
           </h1>
           <p className="animate-fade-up mx-auto mt-5 max-w-md text-lg text-neutral-600 [animation-delay:200ms] lg:mx-0 dark:text-neutral-400">
             Most of us start strong, then quietly slip. FitMate exists to make sticking to your workout and diet feel easy.
@@ -209,7 +209,7 @@ function Problem() {
   const dot = { emerald: "bg-emerald-500 text-white", amber: "bg-amber-500 text-white", rose: "bg-rose-500 text-white" };
   const bar = { emerald: "bg-emerald-500", amber: "bg-amber-500", rose: "bg-rose-500" };
   return (
-    <section id="problem" className="flex min-h-[100svh] flex-col justify-center border-t border-neutral-200 px-5 py-20 dark:border-neutral-800">
+    <section id="problem" className="border-t border-neutral-200 px-5 py-16 sm:py-20 dark:border-neutral-800">
       <div className="mx-auto w-full max-w-3xl">
         <Reveal className="text-center">
           <p className="text-sm font-semibold tracking-wider text-rose-500 uppercase">Sound familiar?</p>
@@ -217,7 +217,7 @@ function Problem() {
           <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400">It never ends in one day. It slips, one small miss at a time.</p>
         </Reveal>
 
-        <ol ref={ref} className="relative mt-12 space-y-3">
+        <ol ref={ref} className="relative mt-10 space-y-3">
           {/* Line that drains from green to red as the days go by. */}
           <span className="absolute top-6 bottom-6 left-[1.4rem] w-0.5 bg-gradient-to-b from-emerald-500 via-amber-500 to-rose-500 opacity-30 sm:left-[1.65rem]" />
           {SLIP_STEPS.map((s, i) => {
@@ -262,13 +262,13 @@ function How() {
     ["3", "Keep the streak", "Every day you show up, it grows. Miss one? A freeze has your back.", <StreakVisual key="s" />],
   ];
   return (
-    <section id="how" className="flex min-h-[100svh] flex-col justify-center bg-neutral-100/60 px-5 py-20 dark:bg-neutral-900/40">
+    <section id="how" className="bg-neutral-100/60 px-5 py-16 sm:py-20 dark:bg-neutral-900/40">
       <div className="mx-auto max-w-6xl">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold tracking-wider text-emerald-600 uppercase">What we do about it</p>
           <h2 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">We take the friction out of every day.</h2>
         </Reveal>
-        <div className="mt-14 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
           {steps.map(([n, title, text, visual], i) => (
             <Reveal key={n} delay={i * 120} className="min-w-0">
               <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
@@ -377,12 +377,17 @@ function StreakVisual() {
 
 function Matters() {
   return (
-    <section className="px-5 py-20">
-      <div className="mx-auto max-w-4xl">
-        <Reveal className="mx-auto max-w-2xl text-center">
+    <section id="matters" className="px-5 py-16 sm:py-20">
+      <div className="mx-auto grid max-w-5xl items-center gap-10 md:grid-cols-2 md:gap-14">
+        <Reveal className="min-w-0 text-center md:text-left">
           <p className="text-sm font-semibold tracking-wider text-emerald-600 uppercase">Why it matters</p>
-          <h2 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Small days add up.</h2>
-          <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400">A plan on paper changes nothing. The days you follow it change everything.</p>
+          <h2 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">
+            Small days
+            <br />
+            <span className="text-gradient animate-shimmer">add up.</span>
+          </h2>
+          <p className="mx-auto mt-4 max-w-md text-lg text-neutral-600 md:mx-0 dark:text-neutral-400">A plan on paper changes nothing. The days you follow it change everything.</p>
+          <p className="mx-auto mt-3 max-w-md font-medium text-neutral-800 md:mx-0 dark:text-neutral-200">FitMate makes each of those days one tap easier.</p>
         </Reveal>
         <EffortCompare />
       </div>
@@ -390,81 +395,73 @@ function Matters() {
   );
 }
 
-// Making the plan (one square) vs. following it: 12 weeks of days filling in one by one (loops).
+// Making the plan takes a day; following it takes 84. Counts up once when it scrolls into view.
 function EffortCompare() {
   const ref = useRef(null);
-  const visible = useInView(ref, { threshold: 0.3 });
-  const WEEKS = 12;
-  const TOTAL = WEEKS * 7;
+  const visible = useInView(ref, { threshold: 0.35 });
+  const TOTAL = 84;
   const [day, setDay] = useState(0);
 
   useEffect(() => {
     if (!visible) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return setDay(TOTAL);
-    let d = 0;
-    let hold = 0;
-    setDay(0);
-    const t = setInterval(() => {
-      if (d < TOTAL) setDay(++d);
-      else if (++hold > 120) {
-        d = 0;
-        hold = 0;
-        setDay(0);
-      }
-    }, 18);
-    return () => clearInterval(t);
-  }, [visible, TOTAL]);
+    let frame;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / 1400);
+      setDay(Math.round(TOTAL * (1 - Math.pow(1 - p, 3)))); // ease-out
+      if (p < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [visible]);
 
+  const weeks = Math.floor(day / 7);
   const done = day >= TOTAL;
-  const week = Math.min(WEEKS, Math.max(1, Math.ceil(day / 7)));
 
   return (
-    <div ref={ref} className="mx-auto mt-10 max-w-md rounded-3xl border border-neutral-200 bg-white p-5 sm:p-7 dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm font-medium">Making the plan</p>
-        <span className="flex items-center gap-2 text-sm text-neutral-500">
-          <span className="h-4 w-4 rounded-[4px] bg-violet-500" /> 1 day
-        </span>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between gap-4">
-        <p className="text-sm font-medium">Following it</p>
-        <span className="text-sm text-emerald-600 tabular-nums dark:text-emerald-400">
-          {day ? `Day ${day} · Week ${week}` : "Day 1"}
-        </span>
-      </div>
-
-      <div className="mt-3 flex justify-center">
-        <div className="w-fit">
-        <div className="grid grid-flow-col grid-rows-7 gap-1" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 0.9rem))` }}>
-          {Array.from({ length: TOTAL }, (_, i) => {
-            const on = i < day;
-            const last = i === TOTAL - 1 && done;
-            return (
-              <span
-                key={i}
-                className={`aspect-square w-full rounded-[3px] transition-all duration-150 ${on ? "bg-emerald-500" : "bg-neutral-200 dark:bg-neutral-800"} ${last ? "scale-125 shadow-lg shadow-emerald-500/40" : on && i === day - 1 ? "scale-110" : "scale-100"}`}
-              />
-            );
-          })}
+    <Reveal delay={120} className="min-w-0">
+      <div ref={ref} className="mx-auto w-full max-w-md rounded-3xl border border-neutral-200 bg-white p-6 shadow-xl shadow-emerald-900/5 dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-6xl leading-none font-extrabold tracking-tight tabular-nums">{day}</p>
+            <p className="mt-1 text-sm text-neutral-500">days of showing up</p>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors duration-500 ${done ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800"}`}>
+            {done ? "12 weeks done" : `Week ${Math.max(1, Math.ceil(day / 7))}`}
+          </span>
         </div>
-        <div className="mt-2 flex justify-between text-[11px] text-neutral-500">
+
+        <div className="mt-6 space-y-3 text-sm">
+          <div>
+            <div className="flex justify-between"><span className="font-medium">Making the plan</span><span className="text-neutral-500">1 day</span></div>
+            <div className="mt-1.5 h-2.5 rounded-full bg-neutral-100 dark:bg-neutral-800">
+              <div className="h-full rounded-full bg-violet-500" style={{ width: `${100 / TOTAL}%`, minWidth: "0.625rem" }} />
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between"><span className="font-medium">Following it</span><span className="text-emerald-600 tabular-nums dark:text-emerald-400">{day} days</span></div>
+            <div className="mt-1.5 h-2.5 rounded-full bg-neutral-100 dark:bg-neutral-800">
+              <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400" style={{ width: `${(day / TOTAL) * 100}%` }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-12 gap-1">
+          {Array.from({ length: 12 }, (_, i) => (
+            <span key={i} className={`h-6 rounded-md transition-colors duration-300 ${i < weeks ? "bg-emerald-500" : "bg-neutral-100 dark:bg-neutral-800"}`} />
+          ))}
+        </div>
+        <div className="mt-1.5 flex justify-between text-[11px] text-neutral-500">
           <span>Week 1</span>
           <span>Week 12</span>
         </div>
-        </div>
-      </div>
 
-      <p className="mt-5 border-t border-neutral-200 pt-4 text-center text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
-        {done ? (
-          <span className="animate-fade-up font-semibold text-neutral-900 dark:text-neutral-100">12 weeks. Every one of them counted.</span>
-        ) : (
-          <>
-            Every square is a day you followed the plan. <span className="font-semibold text-neutral-900 dark:text-neutral-100">That&apos;s where the change happens.</span>
-          </>
-        )}
-      </p>
-    </div>
+        <p className={`mt-5 border-t border-neutral-200 pt-4 text-center text-sm font-semibold transition-opacity duration-500 dark:border-neutral-800 ${done ? "opacity-100" : "opacity-0"}`}>
+          The plan took a day. The results took every day after.
+        </p>
+      </div>
+    </Reveal>
   );
 }
 
@@ -482,7 +479,7 @@ function FinalCta({ signedIn }) {
     [Timer, "Rest timer that runs itself"],
   ];
   return (
-    <section className="relative isolate flex min-h-[100svh] flex-col justify-center overflow-hidden border-t border-neutral-200 bg-gradient-to-b from-emerald-50/60 to-[var(--background)] px-5 py-24 dark:border-neutral-800 dark:from-neutral-950 dark:to-neutral-950 dark:text-white">
+    <section className="relative isolate overflow-hidden border-t border-neutral-200 bg-gradient-to-b from-emerald-50/60 to-[var(--background)] px-5 py-16 sm:py-20 dark:border-neutral-800 dark:from-neutral-950 dark:to-neutral-950 dark:text-white">
       <div className="bg-grid absolute inset-0 -z-10 opacity-60 dark:opacity-40" />
       <div className="animate-drift absolute top-1/4 left-1/4 -z-10 h-[28rem] w-[28rem] rounded-full bg-emerald-400/20 blur-3xl dark:bg-emerald-500/25" />
       <div className="animate-drift absolute right-1/5 bottom-1/5 -z-10 h-80 w-80 rounded-full bg-sky-500/15 blur-3xl [animation-delay:-8s]" />
@@ -498,7 +495,7 @@ function FinalCta({ signedIn }) {
           <p className="mx-auto mt-5 max-w-md text-lg text-neutral-600 dark:text-neutral-400">One day at a time, until it&apos;s simply who you are.</p>
         </Reveal>
 
-        <div className="mt-12 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4">
           {pieces.map(([Icon, label], i) => (
             <Reveal key={label} delay={150 + i * 110}>
               <div className="group flex h-full flex-col items-center gap-3 rounded-2xl border border-neutral-200 bg-white/80 px-4 py-5 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/40 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:hover:bg-white/10">
@@ -541,7 +538,7 @@ function TodayPhone() {
   const ticked = Math.min(done, TODAY_ITEMS.length);
   const all = ticked === TODAY_ITEMS.length;
   return (
-    <div className="animate-fade-up relative mx-auto w-full max-w-[22rem] [animation-delay:200ms]">
+    <div className="animate-fade-up relative mx-auto w-full max-w-[20rem] [animation-delay:200ms]">
       <div className="rounded-[2.2rem] border border-neutral-200 bg-white p-5 shadow-2xl shadow-emerald-900/10 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="flex items-center justify-between">
           <div>
@@ -555,11 +552,11 @@ function TodayPhone() {
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
           <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-500" style={{ width: `${(ticked / TODAY_ITEMS.length) * 100}%` }} />
         </div>
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-3 space-y-1.5">
           {TODAY_ITEMS.map(([slot, name, detail], i) => {
             const on = i < ticked;
             return (
-              <li key={name} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors duration-500 ${on ? "bg-emerald-500/10" : "bg-neutral-50 dark:bg-neutral-950"}`}>
+              <li key={name} className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-colors duration-500 ${on ? "bg-emerald-500/10" : "bg-neutral-50 dark:bg-neutral-950"}`}>
                 <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white transition-all duration-300 ${on ? "scale-100 bg-emerald-500" : "scale-95 border-2 border-neutral-300 dark:border-neutral-700"}`}>{on ? "✓" : ""}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[10px] font-semibold tracking-wide text-neutral-400 uppercase">{slot}</span>
@@ -697,13 +694,13 @@ function InsideApp() {
     [<ShotStreak key="c" />, "Watch it add up", "Streak, calendar and targets show you're on track."],
   ];
   return (
-    <section id="inside" className="flex min-h-[100svh] flex-col justify-center px-5 py-20">
+    <section id="inside" className="px-5 py-16 sm:py-20">
       <div className="mx-auto w-full max-w-6xl">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold tracking-wider text-emerald-600 uppercase">Inside the app</p>
           <h2 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Built for the moment you need it.</h2>
         </Reveal>
-        <div className="mt-14 grid gap-10 md:grid-cols-3 md:gap-6">
+        <div className="mt-10 grid gap-10 md:grid-cols-3 md:gap-6">
           {shots.map(([shot, title, text], i) => (
             <Reveal key={title} delay={i * 140} className="flex min-w-0 flex-col text-center">
               <div className="flex flex-1 items-center">{shot}</div>
@@ -794,7 +791,7 @@ function YouTubeBoost() {
     [<MusicMock key="m" />, "Your playlist, no app switching", "Search any song and keep it playing while you train. Full screen whenever you want."],
   ];
   return (
-    <section id="youtube" className="relative isolate overflow-hidden px-5 py-24">
+    <section id="youtube" className="relative isolate overflow-hidden px-5 py-16 sm:py-20">
       <div className="absolute top-10 left-1/2 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-red-500/10 blur-3xl" />
       <div className="mx-auto w-full max-w-6xl">
         <Reveal className="mx-auto max-w-2xl text-center">
@@ -808,7 +805,7 @@ function YouTubeBoost() {
           </h2>
           <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400">The best videos on YouTube, matched to your exact exercises and meals. Right where you need them.</p>
         </Reveal>
-        <div className="mt-14 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
           {cards.map(([visual, title, text], i) => (
             <Reveal key={title} delay={i * 120} className="min-w-0">
               <div className="flex h-full flex-col rounded-3xl border border-neutral-200 bg-white p-4 transition-transform duration-300 hover:-translate-y-1 dark:border-neutral-800 dark:bg-neutral-900">
@@ -959,14 +956,14 @@ function Features() {
     </div>
   );
   return (
-    <section id="features" className="bg-neutral-100/60 px-5 py-24 dark:bg-neutral-900/40">
+    <section id="features" className="bg-neutral-100/60 px-5 py-16 sm:py-20 dark:bg-neutral-900/40">
       <div className="mx-auto w-full max-w-6xl">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold tracking-wider text-emerald-600 uppercase">Everything else, handled</p>
           <h2 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Less thinking. More doing.</h2>
           <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400">Every small thing that used to stop you, already sorted.</p>
         </Reveal>
-        <div className="mt-14 grid gap-4 md:grid-cols-6">
+        <div className="mt-10 grid gap-4 md:grid-cols-6">
           <Reveal className="min-w-0 md:col-span-3">
             <div className={card}>
               <Head Icon={Bell} title="Reminders that sound like a friend" text="Your workout at your time. Every meal by name. A nudge before your streak slips. Never spammy." />
@@ -1041,7 +1038,7 @@ function Reviews() {
   if (!reviews.length) return null;
   const avg = (reviews.reduce((n, r) => n + r.rating, 0) / reviews.length).toFixed(1);
   return (
-    <section className="px-5 py-24">
+    <section className="px-5 py-16 sm:py-20">
       <div className="mx-auto max-w-6xl">
         <Reveal className="text-center">
           <p className="text-sm font-semibold tracking-wider text-emerald-600 uppercase">What people say</p>
@@ -1050,7 +1047,7 @@ function Reviews() {
             <span className="text-amber-500">★</span> {avg} average from people using FitMate
           </p>
         </Reveal>
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
           {reviews.map((r, i) => (
             <Reveal key={r.id} delay={i * 100} className="min-w-0">
               <figure className="h-full rounded-3xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
