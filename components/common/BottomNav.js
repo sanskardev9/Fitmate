@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { House, Dumbbell, Utensils, ChartColumn, ClipboardList } from "lucide-react";
 import Logo from "./Logo";
 import AccountButton from "@/components/auth/AccountButton";
+import ThemeToggle from "./ThemeToggle";
 
 const TABS = [
   { href: "/home", label: "Home", Icon: House },
@@ -46,7 +47,12 @@ export default function BottomNav() {
           })}
         </ul>
         <div className="mt-auto border-t border-neutral-200 pt-4 dark:border-neutral-800">
-          <AccountButton variant="sidebar" />
+          <div className="flex items-center gap-1">
+            <div className="min-w-0 flex-1">
+              <AccountButton variant="sidebar" />
+            </div>
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
 

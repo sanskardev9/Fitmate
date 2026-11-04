@@ -50,7 +50,6 @@ export default function PlanImport({ kind: fixedKind, returnTo, manualHref, show
   }, [fixedKind]);
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [dragging, setDragging] = useState(false);
 
   function openBuilder(type, draft) {
     saveDraft(type, draft);
@@ -103,43 +102,19 @@ export default function PlanImport({ kind: fixedKind, returnTo, manualHref, show
 
   const kindsList = fixedKind ? [fixedKind] : kind === "diet" ? ["diet", "workout"] : ["workout", "diet"];
   if (mode === "create") return <AiCreate kinds={kindsList} onImport={importPasted} onBack={() => setMode(null)} />;
-  if (mode) return <AiConvert kinds={fixedKind ? [fixedKind] : kind === "diet" ? ["diet", "workout"] : ["workout", "diet"]} onImport={importPasted} onBack={() => setMode(null)} />;
+  if (mode) return <AiConvert onFile={handle} busy={busy} status={status} kinds={fixedKind ? [fixedKind] : kind === "diet" ? ["diet", "workout"] : ["workout", "diet"]} onImport={importPasted} onBack={() => setMode(null)} />;
 
   return (
     <div className="space-y-2">
-      <OptionRow Icon={WandSparkles} title="Create with AI" sub="No plan? AI builds one for you" tone="amber" onClick={() => setMode("create")} />
-      <OptionRow Icon={Sparkles} title="Convert with AI" sub="Have a plan? Most accurate import" tone="violet" onClick={() => setMode("ai")} />
-      <label
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          handle(e.dataTransfer.files?.[0]);
-        }}
-        className={`block cursor-pointer ${busy ? "pointer-events-none opacity-60" : ""}`}
-      >
-        <OptionRow as="div" Icon={Upload} title={busy ? "Reading…" : "Upload PDF or JSON"} sub="Your coach's plan or a file" tone="emerald" highlight={dragging} />
-        <input
-          type="file"
-          accept="application/pdf,.pdf,application/json,.json"
-          className="hidden"
-          onChange={(e) => {
-            handle(e.target.files?.[0]);
-            e.target.value = "";
-          }}
-        />
-      </label>
+      <OptionRow Icon={WandSparkles} title="Make me a plan" sub="No plan yet? Answer a few taps, AI builds it." tone="amber" onClick={() => setMode("create")} />
+      <OptionRow Icon={Sparkles} title="I have a plan" sub="From a coach, a PDF or any AI chat. We'll set it up." tone="violet" onClick={() => setMode("ai")} />
       {manualHref || kind !== "auto" ? (
         <Link href={manualHref ?? `/plans/${kind}/new`} className="block">
-          <OptionRow as="div" Icon={PencilLine} title="Type it in" sub="Build it yourself" tone="neutral" />
+          <OptionRow as="div" Icon={PencilLine} title="Type it in" sub="Add days and exercises yourself" tone="neutral" />
         </Link>
       ) : (
         <>
-          <OptionRow Icon={PencilLine} title="Type it in" sub="Build it yourself" tone="neutral" onClick={() => setPickManual((v) => !v)} />
+          <OptionRow Icon={PencilLine} title="Type it in" sub="Add days and exercises yourself" tone="neutral" onClick={() => setPickManual((v) => !v)} />
           {pickManual && (
             <div className="animate-fade-up grid grid-cols-2 gap-2">
               <Link href="/plans/workout/new" className="rounded-xl border border-neutral-200 py-3 text-center text-sm font-semibold hover:border-emerald-500 dark:border-neutral-800">
@@ -207,11 +182,11 @@ export const AI_RULES = {
     'RECIPE: "recipe" = "Prep: X min" on line 1, then "Ingredients: item qty, item qty", then at most 4 numbered short steps.',
     `CATEGORY (required on every meal AND every alternative): exactly one of ${DISH_CATEGORIES.join(", ")}. Decide by the main dish: "Besan chilla with curd" = Chilla & dosa, "Soya pulao" = Rice, "Sattu shake with toast" = Shake & smoothie.`,
     'DIET (required on every meal AND every alternative): "veg", "egg", "nonveg" or "vegan" = what that dish contains.',
-    'ALTERNATIVES: every meal has EXACTLY 3 "alternatives". Each alternative is a DIFFERENT category from the main meal AND from the other two alternatives (main = Chilla & dosa -> alternatives e.g. Oats, Poha & upma, Sandwich & toast). Protein and calories within 10% of the main meal. Each alternative has the same fields as a meal: "name","category","diet","serving","calories","proteinG","carbsG","fatG","recipe".',
+    'ALTERNATIVES: every meal has EXACTLY 3 "alternatives". Each alternative is a DIFFERENT category from the main meal AND from the other two alternatives (main = Chilla & dosa -> alternatives e.g. Oats, Poha & upma, Sandwich & toast). Protein and calories within 10% of the main meal. Each alternative has the same fields as a meal: "name","category","diet","serving","calories","proteinG","carbsG","fatG","recipe" — but keep each alternative "recipe" to ONE short line (e.g. "Prep: 10 min. Cook besan batter with paneer filling.").',
     'VARIETY (per slot, counting all meals + alternatives in the week): at least 4 different categories, EVERY category used has at least 3 dishes (if one would have only 1-2, add more of it or replace them), and no category above 40% of that slot. Never make every breakfast (or every lunch, every dinner) the same kind of dish.',
     'VIDEO SEARCH (required on every meal AND every alternative): "videoSearch" = 2-5 words naming the MAIN dish to cook, the way people search YouTube for its recipe (e.g. "dal paneer tadka", "soya poha", "besan paneer chilla", "masala oats"). Leave out sides (roti, rice, curd, salad) and words like post-workout or high protein.',
     'VIDEO: "videoUrl" only if you can search the web and found a real YouTube recipe for that exact dish; otherwise leave it out (FitMate finds one). Never invent video IDs.',
-    'CHECK SILENTLY BEFORE REPLYING (do not write the check): per slot, every category has 3+ dishes and there are 4+ categories; every meal has 3 alternatives in 3 other categories; every dish has "category" and "diet"; no dish uses ingredients I avoid; protein per meal and per day hits the target. Fix anything that fails. Your reply is still ONLY the code block.',
+    'CHECK SILENTLY BEFORE REPLYING (do not write the check): per slot, every category has 3+ dishes and there are 4+ categories; every meal has 3 alternatives in 3 other categories; every dish has "category" and "diet"; no dish uses ingredients I avoid; protein per meal and per day hits the target. Fix anything as you write. Your reply is still just the one short line + the code block.',
   ],
 };
 
@@ -231,7 +206,7 @@ const aiPrompt = (kind) =>
   `Convert my ${kind} plan into JSON for the FitMate app.
 
 How to reply:
-- Reply with exactly ONE code block (${FENCE}json) and nothing else. No text before or after it.
+- Reply format: start IMMEDIATELY with one short line (e.g. "Converting your plan now…"), then exactly ONE ${FENCE}json code block with the whole plan, then nothing else. Do not think or plan out loud before the code block; write it straight away.
 - Keep it compact: put each ${kind === "workout" ? "exercise" : "meal"} object on a single line, exactly like the example.
 
 Example of the exact structure:
@@ -263,7 +238,7 @@ export async function copyText(text) {
 }
 
 // Paste from AI: copy our prompt, paste the AI's reply back. No files, exact data.
-function AiConvert({ kinds, onImport, onBack }) {
+function AiConvert({ kinds, onImport, onBack, onFile, busy, status }) {
   const [kind, setKind] = useState(kinds[0]);
   const [copied, setCopied] = useState(false);
   const [reply, setReply] = useState("");
@@ -280,7 +255,7 @@ function AiConvert({ kinds, onImport, onBack }) {
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="mb-4 flex items-center justify-between gap-3">
         <button type="button" onClick={onBack} className="-ml-2 flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
           <ChevronLeft className="h-4 w-4" /> Back
@@ -288,7 +263,33 @@ function AiConvert({ kinds, onImport, onBack }) {
         {kinds.length > 1 && <Segmented options={[["workout", "Workout"], ["diet", "Diet"]]} value={kind} onChange={(k) => { setKind(k); setCopied(false); }} />}
       </div>
 
-      <Step n={1} text="Copy the prompt and send it to ChatGPT, Claude or Gemini with your plan." />
+      <h3 className="text-lg font-semibold">Bring in your plan</h3>
+      <p className="mt-1 text-sm text-neutral-500">Pick whichever is easier. Either way, you check everything before it&apos;s saved.</p>
+
+      <p className="mt-5 text-xs font-semibold tracking-wide text-neutral-500 uppercase">Option A · Have a file?</p>
+      <label className={`mt-2 flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-neutral-300 p-4 hover:border-emerald-500 dark:border-neutral-700 ${busy ? "pointer-events-none opacity-60" : ""}`}>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <Upload className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{busy ? "Reading…" : "Upload PDF or JSON"}</span>
+          <span className="block text-xs text-neutral-500">Your coach&apos;s PDF or a FitMate file. We read it for you.</span>
+        </span>
+        <input
+          type="file"
+          accept="application/pdf,.pdf,application/json,.json"
+          className="hidden"
+          onChange={(e) => {
+            onFile?.(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+      </label>
+      {status && <p className={`mt-2 text-sm ${status.error ? "text-red-600" : "text-emerald-600"}`}>{status.text}</p>}
+
+      <p className="mt-6 text-xs font-semibold tracking-wide text-neutral-500 uppercase">Option B · Plan in a chat, photo or messy PDF? (most accurate)</p>
+      <div className="mt-2" />
+      <Step n={1} text="Copy this prompt and send it to any AI with your plan." />
       <button
         type="button"
         onClick={async () => setCopied(await copyText(prompt))}
@@ -300,7 +301,7 @@ function AiConvert({ kinds, onImport, onBack }) {
       <AiLinks prompt={prompt} onCopied={() => setCopied(true)} />
 
       <div className="mt-5">
-        <Step n={2} text="Tap Copy on the AI's code block and paste it here." />
+        <Step n={2} text="Copy the AI's reply and paste it here." />
         <textarea
           value={reply}
           onChange={(e) => {
@@ -341,7 +342,7 @@ function Step({ n, text }) {
 
 function FieldList({ title, items, required }) {
   return (
-    <div>
+    <div className="min-w-0">
       <p className="mb-1 text-xs font-medium text-neutral-500">{title}</p>
       <ul className="space-y-1">
         {items.map((i) => (

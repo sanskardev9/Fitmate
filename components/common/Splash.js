@@ -8,7 +8,7 @@ import { LogoMark } from "./Logo";
 const PROBLEMS = ["Health?", "Diet?", "Workouts?", "Protein?", "Rest timers?", "Macros?", "Progress?", "Consistency?"];
 const FIRST_MS = 900;
 const WORD_MS = 160;
-const ANSWER_MS = 1300;
+const ANSWER_MS = 2400; // long enough to read "FitMate" and its tagline
 const LEAVE_MS = 900;
 
 // When each word appears, and when the screen lifts and is gone (ms after the intro started).
@@ -82,13 +82,13 @@ export default function Splash() {
   return (
     <div
       aria-hidden
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-neutral-950 px-6 transition-transform duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-[var(--background)] px-6 transition-transform duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
         leaving ? "-translate-y-full" : "translate-y-0"
       }`}
     >
       {/* Curved bottom edge: bulges down while the screen lifts away. */}
       <span
-        className={`absolute top-full left-[-10%] h-40 w-[120%] -translate-y-1/2 rounded-[50%] bg-neutral-950 transition-transform duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+        className={`absolute top-full left-[-10%] h-40 w-[120%] -translate-y-1/2 rounded-[50%] bg-[var(--background)] transition-transform duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
           leaving ? "scale-y-100" : "scale-y-0"
         }`}
       />
@@ -98,14 +98,14 @@ export default function Splash() {
         {answer ? (
           <div className="flex flex-col items-center gap-5 text-center">
             <LogoMark className="h-16 w-16 sm:h-20 sm:w-20" animated />
-            <p className="animate-fade-up text-3xl font-semibold text-white [animation-delay:300ms] sm:text-5xl">
-              Fit<span className="text-emerald-400">Mate</span>
+            <p className="animate-fade-up text-3xl font-semibold text-neutral-900 [animation-delay:300ms] dark:text-white sm:text-5xl">
+              Fit<span className="text-emerald-600 dark:text-emerald-400">Mate</span>
             </p>
-            <p className="animate-fade-up text-sm text-neutral-400 [animation-delay:450ms] sm:text-base">Your Fitness. Your Nutrition. Your Progress.</p>
+            <p className="animate-fade-up text-sm text-neutral-500 [animation-delay:450ms] dark:text-neutral-400 sm:text-base">Your Fitness. Your Nutrition. Your Progress.</p>
           </div>
         ) : (
-          <p className={`flex items-center gap-3 font-semibold text-white ${index === 0 ? "text-5xl sm:text-7xl" : "text-4xl sm:text-6xl"}`}>
-            <span className="h-3 w-3 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.9)] sm:h-4 sm:w-4" />
+          <p className={`flex items-center gap-3 font-semibold text-neutral-900 dark:text-white ${index === 0 ? "text-5xl sm:text-7xl" : "text-4xl sm:text-6xl"}`}>
+            <span className="h-3 w-3 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_14px_rgba(52,211,153,0.9)] dark:bg-emerald-400 sm:h-4 sm:w-4" />
             {PROBLEMS[index]}
           </p>
         )}

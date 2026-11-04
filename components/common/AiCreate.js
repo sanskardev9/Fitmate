@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, Copy, Check, X, Plus } from "lucide-react";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth, displayName } from "@/components/auth/AuthProvider";
 import { cachedProfile } from "@/lib/services/profileService";
+import AboutYou, { missingAbout, aboutFromProfile, saveAbout } from "./AboutYou";
 import { db } from "@/lib/db/dexie";
 import { inferSections, isMain } from "@/lib/workout/sections";
 import { getPreferences, setPreference } from "@/lib/services/preferencesService";
@@ -74,6 +75,7 @@ function aboutMe(p) {
     p.weight_kg && `Weight: ${p.weight_kg} kg`,
     p.target_weight_kg && `Target weight: ${p.target_weight_kg} kg`,
     p.goal && `Goal: ${GOALS[p.goal] ?? p.goal}`,
+    p.goal_note && `My goal in my own words: ${p.goal_note}`,
     p.experience && `Experience: ${p.experience}`,
     p.calories_target && `Daily calories target: ${p.calories_target} kcal`,
     p.protein_target_g && `Daily protein target: ${p.protein_target_g} g`,
@@ -176,7 +178,7 @@ My choices:
 ${picked.length ? picked.map((x) => `- ${x}`).join("\n") : "- None, use sensible defaults"}
 
 Do NOT ask me any questions. Anything not given: choose sensible defaults.
-Reply with exactly ONE code block (${FENCE}json) and nothing else.
+Reply format: start IMMEDIATELY with one short line (e.g. "Building your plan now…"), then exactly ONE ${FENCE}json code block with the whole plan, then nothing else. Do not think or plan out loud before the code block; write it straight away.
 ${fit}
 - Keep it compact: one ${kind === "workout" ? "exercise" : "meal"} object per line, exactly like this example:
 ${FENCE}json
@@ -188,11 +190,41 @@ ${AI_RULES[kind].map((r) => `- ${r}`).join("\n")}
 `;
 }
 
+// Compact pill used for every choice: auto width, wraps naturally, clear selected state.
+const chip = (on) =>
+  `inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium whitespace-nowrap transition-colors active:scale-95 ${
+    on
+      ? "border-amber-500 bg-amber-500/10 text-amber-800 dark:border-amber-400 dark:bg-amber-400/10 dark:text-amber-200"
+      : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-transparent dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-800"
+  }`;
+
 const storeKey = (kind) => `aiAnswers_${kind}`;
 
 export default function AiCreate({ kinds, onImport, onBack }) {
   const { user } = useAuth();
-  const profile = user ? cachedProfile(user.id) : null;
+  const [profile, setProfile] = useState(() => (user ? cachedProfile(user.id) : null));
+  const needsAbout = missingAbout(profile).length > 0;
+  const [about, setAbout] = useState(() => aboutFromProfile(user ? cachedProfile(user.id) : null));
+  const [aboutError, setAboutError] = useState("");
+
+  // Save missing basics to the profile (targets worked out from them) before building the prompt.
+  async function ensureProfile() {
+    if (!needsAbout) return profile;
+    const r = await saveAbout({ userId: user.id, name: profile?.full_name || displayName(user), about });
+    if (r.error) {
+      setAboutError(r.error);
+      return null;
+    }
+    setAboutError("");
+    setProfile(r.profile);
+    return r.profile;
+  }
+
+  async function copyPrompt() {
+    const p = await ensureProfile();
+    if (!p && needsAbout) return false;
+    return copyText(buildPrompt(kind, p ?? profile, answers, extra, others, training));
+  }
   const [kind, setKind] = useState(kinds[0]);
   const [answers, setAnswers] = useState({});
   const [extra, setExtra] = useState("");
@@ -265,7 +297,7 @@ export default function AiCreate({ kinds, onImport, onBack }) {
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="mb-4 flex items-center justify-between gap-3">
         <button type="button" onClick={onBack} className="-ml-2 flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
           <ChevronLeft className="h-4 w-4" /> Back
@@ -273,13 +305,18 @@ export default function AiCreate({ kinds, onImport, onBack }) {
         {kinds.length > 1 && <Segmented options={[["workout", "Workout"], ["diet", "Diet"]]} value={kind} onChange={setKind} />}
       </div>
 
+      {needsAbout && (
+        <div className="mb-5">
+          <AboutYou value={about} onChange={setAbout} error={aboutError} />
+        </div>
+      )}
       <StepTitle n={1} text="Tap what fits you" sub="All optional. Skip any and the AI decides." />
-      <div className="mt-3 space-y-4">
+      <div className="mt-4 divide-y divide-neutral-100 dark:divide-neutral-800">
         {QUESTIONS[kind]
           .filter((q) => !q.when || q.when(answers))
           .map((q) => (
-            <div key={q.id} className="animate-fade-up">
-              <div className="mb-2">
+            <div key={q.id} className="animate-fade-up py-3.5 first:pt-0">
+              <div className="mb-2.5">
                 <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{q.q}</p>
                 {q.hint && <p className="text-xs text-neutral-500">{q.hint}</p>}
               </div>
@@ -318,19 +355,12 @@ export default function AiCreate({ kinds, onImport, onBack }) {
                   }}
                 />}
               {q.type === "one" && (
-                <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${q.options.length}, minmax(0, 1fr))` }}>
+                <div role="radiogroup" aria-label={q.q} className="flex flex-wrap gap-2">
                   {q.options.map((o) => {
                     const on = answers[q.id]?.includes(o);
                     return (
-                      <button
-                        key={o}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => toggle(q, o)}
-                        className={`min-h-11 rounded-xl px-1.5 py-1.5 text-sm leading-tight font-medium transition-colors active:scale-[0.97] ${
-                          on ? "bg-amber-500 text-white shadow-sm shadow-amber-500/30" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
-                        }`}
-                      >
+                      <button key={o} type="button" role="radio" aria-checked={on} onClick={() => toggle(q, o)} className={chip(on)}>
+                        {on && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
                         {o}
                       </button>
                     );
@@ -346,9 +376,7 @@ export default function AiCreate({ kinds, onImport, onBack }) {
                       type="button"
                       aria-pressed={on}
                       onClick={() => toggle(q, o)}
-                      className={`flex h-10 items-center gap-1.5 rounded-xl px-3.5 text-sm font-medium transition-colors active:scale-95 ${
-                        on ? "bg-amber-500 text-white shadow-sm shadow-amber-500/30" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
-                      }`}
+                      className={chip(on)}
                     >
                       {on && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
                       {o}
@@ -387,13 +415,17 @@ export default function AiCreate({ kinds, onImport, onBack }) {
         <StepTitle n={2} text="Copy and send to ChatGPT, Claude or Gemini" sub="It replies with your plan straight away." />
         <button
           type="button"
-          onClick={async () => setCopied(await copyText(buildPrompt(kind, profile, answers, extra, others, training)))}
+          onClick={async () => setCopied(await copyPrompt())}
           className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-colors ${copied ? "bg-emerald-600" : "bg-amber-600 active:bg-amber-700"}`}
         >
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? "Prompt copied" : "Copy prompt"}
         </button>
-        <AiLinks prompt={buildPrompt(kind, profile, answers, extra, others, training)} onCopied={() => setCopied(true)} />
+        {needsAbout ? (
+          <p className="mt-2 text-xs text-neutral-500">Fill in <b>About you</b> above, then copy the prompt.</p>
+        ) : (
+          <AiLinks prompt={buildPrompt(kind, profile, answers, extra, others, training)} onCopied={() => setCopied(true)} />
+        )}
       </div>
 
       <div className="mt-6">
@@ -451,7 +483,7 @@ function SearchPicks({ options, popular = [], value, onChange, placeholder, onCr
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       <div
         onClick={(e) => e.target === e.currentTarget && input.current?.focus()}
         className="flex min-h-11 cursor-text flex-wrap items-center gap-1.5 rounded-xl border border-neutral-300 p-1.5 focus-within:border-amber-500 dark:border-neutral-700"

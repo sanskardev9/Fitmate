@@ -32,6 +32,9 @@ export default function AiLinks({ prompt, onCopied }) {
           </a>
         ))}
       </div>
+      <p className="mt-3 rounded-xl bg-neutral-100 px-3 py-2.5 text-xs leading-relaxed text-neutral-600 dark:bg-neutral-800/70 dark:text-neutral-300">
+        <b className="font-semibold">Tip:</b> if ChatGPT says <i>&ldquo;Thinking…&rdquo;</i> for a while, tap <b>Skip</b> (or pick the <b>Instant</b> model) and it starts writing right away.
+      </p>
     </div>
   );
 }

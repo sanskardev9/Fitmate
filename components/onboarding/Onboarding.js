@@ -1,23 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db/dexie";
 import { getPreferences } from "@/lib/services/preferencesService";
-import { saveProfile } from "@/lib/services/profileService";
+import { saveProfile, cachedProfile, fetchProfile } from "@/lib/services/profileService";
+import AboutYou, { missingAbout, aboutFromProfile, saveAbout } from "@/components/common/AboutYou";
 import { useAuth, displayName } from "@/components/auth/AuthProvider";
 import PlanImport from "@/components/common/PlanImport";
 import Logo from "@/components/common/Logo";
 import { primaryButton } from "@/components/common/ui";
 
-// One screen, nothing required: drop in a plan (or don't) and start. Everything else
-// (targets, profile details) is optional and lives where it's used.
+// Two quick steps: 1) about you (needed for accurate targets and AI plans), 2) bring in or make a plan.
 export default function Onboarding() {
   const router = useRouter();
   const { user } = useAuth();
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
+  const [profile, setProfile] = useState(null);
+  const [about, setAbout] = useState(aboutFromProfile(null));
+  const [aboutError, setAboutError] = useState("");
+  const [savingAbout, setSavingAbout] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const local = cachedProfile(user.id);
+    setProfile(local);
+    setAbout(aboutFromProfile(local));
+    fetchProfile(user.id)
+      .then((p) => {
+        if (!p) return;
+        setProfile(p);
+        setAbout(aboutFromProfile(p));
+      })
+      .catch(() => {});
+  }, [user]);
+
+  const step = missingAbout(profile).length ? "about" : "plans";
+
+  async function continueAbout() {
+    setSavingAbout(true);
+    const r = await saveAbout({ userId: user.id, name: displayName(user), about });
+    setSavingAbout(false);
+    if (r.error) return setAboutError(r.error);
+    setAboutError("");
+    setProfile(r.profile);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   const plans = useLiveQuery(async () => {
     const prefs = await getPreferences();
@@ -57,10 +87,23 @@ export default function Onboarding() {
           <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">
             Welcome{name ? `, ${name.split(" ")[0]}` : ""}.
             <br />
-            <span className="text-gradient animate-shimmer">Let&apos;s bring in your plan.</span>
+            <span className="text-gradient animate-shimmer">{step === "about" ? "First, a little about you." : "Let's bring in your plan."}</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-lg text-neutral-600 dark:text-neutral-400">Drop in the PDF or JSON you already have. FitMate reads it and sets up your days.</p>
+          <p className="mx-auto mt-4 max-w-lg text-neutral-600 dark:text-neutral-400">
+            {step === "about" ? "Takes 20 seconds. It sets your daily calories and protein, so every plan fits you." : "Already have a plan? Bring it in. No plan yet? We'll help you make one."}
+          </p>
+          <p className="mt-3 text-xs font-semibold tracking-wider text-neutral-400 uppercase">Step {step === "about" ? 1 : 2} of 2</p>
         </div>
+
+        {step === "about" ? (
+          <div className="animate-fade-up mx-auto mt-8 max-w-4xl [animation-delay:100ms]">
+            <AboutYou value={about} onChange={setAbout} error={aboutError} />
+            <button type="button" onClick={continueAbout} disabled={savingAbout} className={`${primaryButton} mx-auto mt-5 block w-full max-w-md py-4`}>
+              {savingAbout ? "Saving…" : "Continue →"}
+            </button>
+          </div>
+        ) : (
+        <>
 
         <div className="mt-10 grid gap-4 md:grid-cols-2">
           <PlanSlot kind="workout" title="Workout plan" plan={plans?.workout} delay={100} />
@@ -75,6 +118,8 @@ export default function Onboarding() {
           </button>
           {!hasAny && <p className="text-sm text-neutral-500">No plan handy? Start anyway and add it whenever you like.</p>}
         </div>
+        </>
+        )}
       </main>
     </div>
   );
@@ -82,7 +127,7 @@ export default function Onboarding() {
 
 function PlanSlot({ kind, title, plan, delay }) {
   return (
-    <section className="animate-fade-up rounded-3xl border border-neutral-200 bg-white/80 p-6 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/80" style={{ animationDelay: `${delay}ms` }}>
+    <section className="animate-fade-up min-w-0 rounded-3xl border border-neutral-200 bg-white/80 p-6 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/80" style={{ animationDelay: `${delay}ms` }}>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-semibold">{title}</h2>
         {plan && <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">✓ Added</span>}

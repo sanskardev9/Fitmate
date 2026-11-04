@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #fafafa;
   --foreground: #171717;
@@ -107,11 +109,9 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
@@ -201,5 +201,36 @@ input:-webkit-autofill:focus {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Theme switch: the new theme wipes across the whole screen. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+:root[data-theme-wipe="to-dark"]::view-transition-new(root) {
+  animation: theme-wipe-right 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+}
+:root[data-theme-wipe="to-light"]::view-transition-new(root) {
+  animation: theme-wipe-left 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+}
+@keyframes theme-wipe-right {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes theme-wipe-left {
+  from { clip-path: inset(0 0 0 100%); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+/* Anchor links (Why, How it works, logo) glide instead of jumping; stop below the fixed header. */
+html {
+  scroll-padding-top: 4.5rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
   }
 }

@@ -5,11 +5,15 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { onLocalChange } from "@/lib/db/dexie";
 import { syncNow, subscribeSync, getSyncState } from "@/lib/sync/sync";
 
-const INTERVAL_MS = 20_000;
+// Background check for changes from your other devices: every 5 min, only while the tab is visible.
+const INTERVAL_MS = 5 * 60_000;
+// Coming back to the tab only re-checks if the last sync is older than this.
+const STALE_MS = 60_000;
 const DEBOUNCE_MS = 1500;
 
 // Keeps local data and the signed-in account in step: on sign-in, shortly after any local
-// change, when the tab regains focus or the network returns, and every 20 s.
+// change (the main trigger), when the tab comes back after a while, when the network returns,
+// and a light background check every 5 minutes while the app is on screen.
 export default function SyncProvider({ children }) {
   const { user } = useAuth();
   const userId = user?.id;
@@ -22,10 +26,12 @@ export default function SyncProvider({ children }) {
       clearTimeout(debounce);
       debounce = setTimeout(run, DEBOUNCE_MS);
     };
-    const onVisible = () => document.visibilityState === "visible" && run();
+    const stale = () => Date.now() - (getSyncState().lastSyncedAt ?? 0) > STALE_MS;
+    const onVisible = () => document.visibilityState === "visible" && stale() && run();
+    const tick = () => document.visibilityState === "visible" && run();
 
     run();
-    const interval = setInterval(run, INTERVAL_MS);
+    const interval = setInterval(tick, INTERVAL_MS);
     const offChange = onLocalChange(soon);
     window.addEventListener("online", run);
     document.addEventListener("visibilitychange", onVisible);

@@ -9,7 +9,7 @@ export default function ImportPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <BackLink fallback="/plans" />
-      <PageHeader title="Add a plan" subtitle="Import it, create it with AI, or type it in." />
+      <PageHeader title="Add a plan" subtitle="Bring the one you have, or let AI make one for you." />
       <Card>
         <PlanImport />
       </Card>

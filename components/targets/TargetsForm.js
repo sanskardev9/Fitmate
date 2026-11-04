@@ -10,6 +10,9 @@ export const GOALS = [
   ["lose_fat", "Lose fat"],
   ["recomposition", "Build muscle & lose fat"],
   ["build_muscle", "Build muscle"],
+  ["gain_strength", "Get stronger"],
+  ["calisthenics_skills", "Calisthenics skills"],
+  ["general_fitness", "General fitness"],
   ["maintain", "Maintain"],
 ];
 
