@@ -144,38 +144,46 @@ export default function GroceryList() {
   return (
     <>
       {header}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-emerald-500/10 px-4 py-3 text-sm">
-        <span>
-          <b className="tabular-nums">{all.length}</b> items for the week
-          {done > 0 && <span className="text-neutral-500 tabular-nums"> · {done} in the basket</span>}
-        </span>
-        <span className="flex gap-2">
-          {done > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setChecked({});
-                try {
-                  localStorage.removeItem(storeKey);
-                } catch {}
-              }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-neutral-300 px-3 text-xs font-semibold dark:border-neutral-700"
-            >
-              <RotateCcw className="h-3.5 w-3.5" /> Reset
-            </button>
-          )}
-          <button type="button" onClick={copy} aria-label="Copy list" className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-neutral-300 px-3 text-xs font-semibold dark:border-neutral-700">
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />} {copied ? "Copied" : "Copy"}
+      {/* Progress + actions: three equal buttons across the width. */}
+      <div className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="flex items-baseline justify-between gap-3 text-sm">
+          <span>
+            <b className="text-base tabular-nums">{all.length}</b> items for the week
+          </span>
+          <span className="flex items-center gap-3 text-neutral-500 tabular-nums">
+            {done}/{all.length} in the basket
+            {done > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setChecked({});
+                  try {
+                    localStorage.removeItem(storeKey);
+                  } catch {}
+                }}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+              >
+                <RotateCcw className="h-3 w-3" /> Reset
+              </button>
+            )}
+          </span>
+        </div>
+        <div className="mt-2 h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800">
+          <div className="h-1.5 rounded-full bg-emerald-500 transition-[width] duration-300" style={{ width: `${all.length ? (done / all.length) * 100 : 0}%` }} />
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <button type="button" onClick={copy} aria-label="Copy list" className="flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-semibold transition-colors hover:bg-neutral-50 sm:gap-2 sm:text-sm dark:border-neutral-700 dark:hover:bg-neutral-800">
+            {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+            {copied ? "Copied" : "Copy"}
           </button>
-          <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer" aria-label="Send on WhatsApp" title="WhatsApp" className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-900">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="#25D366" aria-hidden="true">
-              <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3a.5.5 0 0 0 0-.4l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.1.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.4-.3Z" />
-            </svg>
+          <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer" aria-label="Send on WhatsApp" className="flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-semibold transition-colors hover:bg-neutral-50 sm:gap-2 sm:text-sm dark:border-neutral-700 dark:hover:bg-neutral-800">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="#25D366" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3a.5.5 0 0 0 0-.4l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.1.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.4-.3Z" /></svg>
+            WhatsApp
           </a>
-          <button type="button" onClick={share} className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white">
-            <Share2 className="h-3.5 w-3.5" /> Share
+          <button type="button" onClick={share} className="flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 sm:gap-2 sm:text-sm">
+            <Share2 className="h-4 w-4" /> Share
           </button>
-        </span>
+        </div>
       </div>
       {shareNote && <p className="-mt-2 mb-3 text-xs text-emerald-700 dark:text-emerald-400">{shareNote}</p>}
 

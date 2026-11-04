@@ -13,6 +13,8 @@ import RecipeVideo from "./RecipeVideo";
 import { contributeDishes } from "@/lib/services/dishCatalog";
 import { youtubeId, checkVideos } from "@/lib/youtube";
 import { DayTabs, DayPager } from "@/components/common/DayTabs";
+import Segmented from "@/components/common/Segmented";
+import DietDayPreview from "./DietDayPreview";
 import { Trash2 } from "lucide-react";
 import BackLink from "@/components/common/BackLink";
 import SearchSelect from "@/components/common/SearchSelect";
@@ -39,6 +41,7 @@ export default function DietPlanBuilder({ header }) {
   const [name, setName] = useState("");
   const [days, setDays] = useState([newDay(1)]);
   const [activeRaw, setActive] = useState(0);
+  const [view, setView] = useState("edit"); // "edit" | "preview", like the workout builder
   const active = Math.min(activeRaw, days.length - 1);
   const goTo = (i) => {
     setActive(i);
@@ -171,13 +174,22 @@ export default function DietPlanBuilder({ header }) {
         <input className={inputClass} placeholder="e.g. Lean Bulk – 140 g protein" value={name} onChange={(e) => setName(e.target.value)} />
       </Card>
 
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm text-neutral-500">
+          {days.length} day{days.length === 1 ? "" : "s"}
+        </span>
+        <Segmented options={[["edit", "Edit"], ["preview", "Preview"]]} value={view} onChange={setView} />
+      </div>
+
       <DayTabs days={days} active={active} onChange={setActive} addLabel="Add a different day" onAdd={() => {
         setDays((ds) => [...ds, { ...newDay(ds.length + 1) }]);
         setActive(days.length);
       }} />
 
+      {view === "preview" && days[active] && <DietDayPreview day={days[active]} />}
+
       {days.map((day, dayIndex) => {
-        if (dayIndex !== active) return null;
+        if (dayIndex !== active || view === "preview") return null;
         const totals = sumNutrition(day.meals.map((m) => ({ calories: toNum(m.calories), proteinG: toNum(m.proteinG), carbsG: toNum(m.carbsG), fatG: toNum(m.fatG) })));
         return (
           <Card key={day.key}>
