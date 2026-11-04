@@ -153,6 +153,7 @@ export const AI_RULES = {
     '"restSec" is rest between sets in seconds (2 min = 120). "weightKg" only if extra weight is used.',
     'If a range is given (e.g. 8–12), use the lower number and write the range in "notes". Put "each side" and form cues in "notes".',
     '"section": "warmup" for warm-up/prep items (mobility, activation, light sets), "cooldown" for stretches at the end. Leave "section" out for main work. Keep warm-up items first and cool-down items last.',
+    'ALTERNATIVES: every main exercise (not warm-up or cool-down) has "alternatives": exactly 2 swaps that train the same muscles at a similar effort, each {"name","sets","reps" or "holdSec","notes"}. First = an easier or more common progression, second = one needing different or no equipment. Say which in "notes" ("Easier", "No rings"). Keep all exercises from my plan; alternatives are extra.',
   ],
   diet: [
     'DAYS: one entry in "days" per day of the plan, with its "weekdays". If every day is the same, use one day with all seven weekdays.',

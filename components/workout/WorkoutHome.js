@@ -16,6 +16,7 @@ import { loadDaily } from "@/lib/services/insights";
 import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
 import { FormVideoButton, FormVideo } from "./FormVideo";
 import MusicButton from "@/components/music/MusicButton";
+import { inferSections } from "@/lib/workout/sections";
 import { WorkoutOutcome } from "@/components/tracker/DailyTracker";
 
 async function load() {
@@ -36,6 +37,7 @@ async function load() {
 // Workout tab: resume / start today's session, pick another day, see recent sessions.
 export default function WorkoutHome() {
   const [formOpen, setFormOpen] = useState(null); // exercise whose form video is open
+  const [foldOpen, setFoldOpen] = useState({}); // warm-up / cool-down expanded?
   const data = useLiveQuery(load, []);
   if (!data) return <PageHeader title="Workout" />;
   const { active, plan, today, todayExercises, days, history, ended, endedSets, daily } = data;
@@ -68,18 +70,36 @@ export default function WorkoutHome() {
               <>
                 <h2 className="mt-1 text-xl font-semibold">{today.name}</h2>
                 <ul className="mt-4 divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {todayExercises.map((e) => (
-                    <li key={e.id} className="py-2.5 text-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="min-w-0 font-medium break-words">{e.name}</span>
-                        <span className="flex shrink-0 items-center gap-2">
-                          <span className="text-neutral-500 tabular-nums">{formatTarget(e)}</span>
-                          <FormVideoButton open={formOpen === e.id} onToggle={() => setFormOpen((v) => (v === e.id ? null : e.id))} />
-                        </span>
-                      </div>
-                      {formOpen === e.id && <FormVideo name={e.name} />}
-                    </li>
-                  ))}
+                  {/* Warm-up and cool-down fold into one line each, so the main work stands out. */}
+                  {["warmup", "main", "cooldown"].map((sec) => {
+                    const items = inferSections(todayExercises).filter((e) => (e.section ?? "main") === sec);
+                    if (!items.length) return null;
+                    const rows = items.map((e) => (
+                        <li key={e.id} className="py-2.5 text-sm">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="min-w-0 font-medium break-words">{e.name}</span>
+                            <span className="flex shrink-0 items-center gap-2">
+                              <span className="text-neutral-500 tabular-nums">{formatTarget(e)}</span>
+                              <FormVideoButton open={formOpen === e.id} onToggle={() => setFormOpen((v) => (v === e.id ? null : e.id))} />
+                            </span>
+                          </div>
+                          {formOpen === e.id && <FormVideo name={e.name} />}
+                        </li>
+                    ));
+                    if (sec === "main") return rows;
+                    const open = foldOpen[sec];
+                    return (
+                      <li key={sec} className="py-1">
+                        <button type="button" onClick={() => setFoldOpen((o) => ({ ...o, [sec]: !o[sec] }))} aria-expanded={open} className="flex w-full items-center justify-between gap-3 rounded-lg py-1.5 text-left text-sm">
+                          <span className="font-semibold text-sky-600 dark:text-sky-400">
+                            {sec === "warmup" ? "Warm-up" : "Cool-down"} <span className="font-normal text-neutral-500">· {items.length} {items.length === 1 ? "move" : "moves"}</span>
+                          </span>
+                          <ChevronDown className={`h-4 w-4 shrink-0 text-neutral-400 transition-transform ${open ? "rotate-180" : ""}`} />
+                        </button>
+                        {open && <ul className="animate-fade-up divide-y divide-neutral-100 pl-3 [animation-duration:200ms] dark:divide-neutral-800">{rows}</ul>}
+                      </li>
+                    );
+                  })}
                 </ul>
                 {!active && ended ? (
                   <div className="mt-5 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-950">

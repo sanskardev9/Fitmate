@@ -2,14 +2,15 @@
 
 import { Fragment, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { isMain, SECTION_LABEL } from "@/lib/workout/sections";
-import { X, Timer, Check, Play, Plus, Minus } from "lucide-react";
+import { X, Timer, Check, Play, Plus, Minus, ArrowLeftRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db/dexie";
 import { getPreferences } from "@/lib/services/preferencesService";
 import { getDaysForPlan, getDayForWeekday } from "@/lib/services/workoutService";
-import { startSession, getActiveSession, getSessionSets, logSet, deleteSet, finishSession, discardSession, lastPerformance } from "@/lib/services/sessionService";
+import { startSession, getActiveSession, getSessionSets, logSet, deleteSet, finishSession, discardSession, lastPerformance, swapExercise } from "@/lib/services/sessionService";
+import SwapSheet from "./SwapSheet";
 import { startRest, skipRest, unlockAudio, getAutoRest, restAlert, getRest, subscribeRest } from "@/lib/workout/restTimer";
 import { formatDuration, WEEKDAYS } from "@/lib/utils";
 import RestTimerBar from "./RestTimerBar";
@@ -34,6 +35,7 @@ export default function ActiveSession() {
   const [layout, setLayout] = useState({}); // exerciseId -> { extra, removed }
   const [drafts, setDrafts] = useState({}); // "exerciseId:set" -> { value, weight }
   const [formOpen, setFormOpen] = useState(null); // exerciseId whose form video is open
+  const [swapFor, setSwapFor] = useState(null); // exercise being swapped
   const [timing, setTiming] = useState(null); // { exIndex, n, idx } for the hold stopwatch
   const rest = useSyncExternalStore(subscribeRest, getRest, () => null);
   const [, setClock] = useState(0);
@@ -218,7 +220,13 @@ export default function ActiveSession() {
                   <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold break-words">
                     {ex.name}
                     <FormVideoButton open={formOpen === ex.exerciseId} onToggle={() => setFormOpen((v) => (v === ex.exerciseId ? null : ex.exerciseId))} />
+                    {ex.alternatives?.length > 0 && Object.keys(done).length === 0 && (
+                      <button type="button" onClick={() => setSwapFor(ex)} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
+                        <ArrowLeftRight className="h-3.5 w-3.5" /> Swap
+                      </button>
+                    )}
                   </h2>
+                  {ex.swappedFrom && <p className="text-[11px] text-neutral-400">Swapped from {ex.swappedFrom}</p>}
                   <p className="mt-0.5 text-xs text-neutral-500">
                     {ex.sets} × {target ?? "–"}
                     {ex.type === "hold" ? "s hold" : " reps"}
@@ -295,6 +303,18 @@ export default function ActiveSession() {
       {!rest && <NextSetBar next={next} draft={next ? draftFor(next.ex, next.n, next.idx) : null} onLog={() => (next.ex.type === "hold" ? setTiming({ exIndex: next.exIndex, n: next.n, idx: next.idx }) : logRow(next.exIndex, next.n, next.idx))} onFinish={() => setFinishing(true)} />}
       <RestTimerBar next={restNext.current} />
       {timerOpen && <TimerPicker onClose={() => setTimerOpen(false)} />}
+      {swapFor && (
+        <SwapSheet
+          exercise={swapFor}
+          onClose={() => setSwapFor(null)}
+          onPick={async (alt) => {
+            const plan = await swapExercise(session.id, swapFor.exerciseId, alt);
+            if (plan) setSession((s) => ({ ...s, plan }));
+            setFormOpen(null);
+            setSwapFor(null);
+          }}
+        />
+      )}
       {timing && timingEx && (
         <HoldTimer
           title={`${timingEx.name} · set ${timing.idx + 1}`}

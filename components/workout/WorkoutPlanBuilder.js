@@ -55,6 +55,7 @@ const newExercise = () => ({
   weightUnit: "kg",
   notes: "",
   section: "main",
+  alternatives: [],
   flags: [],
 });
 const newDay = (n) => ({ key: uid(), name: `Day ${n}`, weekdays: [], exercises: [newExercise()] });
@@ -72,6 +73,7 @@ function fromParsed(ex) {
     weight: ex.weightKg ?? "",
     notes: ex.notes ?? "",
     section: ex.section ?? "main",
+    alternatives: ex.alternatives ?? [],
     flags: [...new Set((ex.flags ?? []).map((f) => flagMap[f]).filter(Boolean))],
   };
 }
@@ -226,6 +228,7 @@ export default function WorkoutPlanBuilder({ header }) {
             weightUnit: e.weightUnit,
             notes: e.notes.trim(),
             section: e.section ?? "main",
+            alternatives: e.alternatives ?? [],
           };
         }),
       })),
