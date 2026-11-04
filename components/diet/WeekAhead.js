@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { ShoppingBasket, ChevronRight } from "lucide-react";
-import { upcomingMeals } from "@/lib/diet/groceries";
+import { upcomingMeals, friendlyIngredients } from "@/lib/diet/groceries";
 import { dishName } from "@/lib/diet/dishName";
 
 // The coming week at a glance (so you can prep and shop), plus the way into the grocery list.
@@ -49,6 +49,15 @@ export default function WeekAhead({ planId }) {
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-medium break-words">{dishName(m.name)}</span>
                     {m.serving && <span className="block text-xs text-neutral-500">{m.serving}</span>}
+                    {friendlyIngredients(m.recipe).length > 0 && (
+                      <span className="mt-1.5 flex flex-wrap gap-1">
+                        {friendlyIngredients(m.recipe).map((x, i) => (
+                          <span key={i} className="rounded-md bg-neutral-100 px-1.5 py-0.5 text-[11px] text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                            {x}
+                          </span>
+                        ))}
+                      </span>
+                    )}
                   </span>
                   <span className="shrink-0 text-right text-xs text-neutral-500 tabular-nums">
                     {m.calories ?? "–"} kcal

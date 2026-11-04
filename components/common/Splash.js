@@ -31,11 +31,19 @@ const finished = () => startedAt !== null && performance.now() - startedAt >= SC
 // Auth and setup pages are task pages (often opened from an email link): no intro there.
 const NO_INTRO = /^\/(login|auth\/|reset-password|onboarding)/;
 
-// Plays on every load or refresh; skipped on back/forward and for people who prefer reduced motion.
+// Once per visit: when FitMate is opened, not again in the same tab. Phones (and some browsers)
+// quietly reload a tab that was in the background; that reload shouldn't replay the intro.
+// Also skipped on back/forward and for people who prefer reduced motion.
+const SEEN = "fitmate:intro-seen";
 function shouldPlay() {
   if (NO_INTRO.test(window.location.pathname)) return false;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
-  return performance.getEntriesByType?.("navigation")?.[0]?.type !== "back_forward";
+  if (performance.getEntriesByType?.("navigation")?.[0]?.type === "back_forward") return false;
+  try {
+    if (sessionStorage.getItem(SEEN)) return false;
+    sessionStorage.setItem(SEEN, "1");
+  } catch {}
+  return true;
 }
 
 export default function Splash() {
