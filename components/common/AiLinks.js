@@ -12,19 +12,46 @@ import { copyText } from "./PlanImport";
 const MAX_URL_PROMPT = 6000;
 const fits = (p) => encodeURIComponent(p).length <= MAX_URL_PROMPT;
 const AIS = [
-  { name: "ChatGPT", domain: "chatgpt.com", url: (p) => (fits(p) ? `https://chatgpt.com/?q=${encodeURIComponent(p)}` : "https://chatgpt.com/") },
-  { name: "Claude", domain: "claude.ai", url: (p) => (fits(p) ? `https://claude.ai/new?q=${encodeURIComponent(p)}` : "https://claude.ai/new") },
-  { name: "Gemini", domain: "gemini.google.com", url: () => "https://gemini.google.com/app" },
-  { name: "Perplexity", domain: "perplexity.ai", url: (p) => (fits(p) ? `https://www.perplexity.ai/search?q=${encodeURIComponent(p)}` : "https://www.perplexity.ai/") },
+  { name: "ChatGPT", domain: "chatgpt.com", pkg: "com.openai.chatgpt", url: (p) => (fits(p) ? `https://chatgpt.com/?q=${encodeURIComponent(p)}` : "https://chatgpt.com/") },
+  { name: "Claude", domain: "claude.ai", pkg: "com.anthropic.claude", url: (p) => (fits(p) ? `https://claude.ai/new?q=${encodeURIComponent(p)}` : "https://claude.ai/new") },
+  { name: "Gemini", domain: "gemini.google.com", pkg: "com.google.android.apps.bard", url: () => "https://gemini.google.com/app" },
+  { name: "Perplexity", domain: "perplexity.ai", pkg: "ai.perplexity.app.android", url: (p) => (fits(p) ? `https://www.perplexity.ai/search?q=${encodeURIComponent(p)}` : "https://www.perplexity.ai/") },
 ];
+
+// Android: open the installed app straight away with the prompt as shared text (any length);
+// the website opens instead if the app isn't installed.
+const androidIntent = (ai, p) =>
+  `intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=${encodeURIComponent(p)};package=${ai.pkg};S.browser_fallback_url=${encodeURIComponent(ai.url(""))};end`;
 const icon = (domain) => `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
 export default function AiLinks({ prompt, onCopied }) {
   const [canShare, setCanShare] = useState(false);
+  const [platform, setPlatform] = useState(null); // "android" | "ios" | null
   const [shareNote, setShareNote] = useState("");
   useEffect(() => {
     setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches);
+    const ua = navigator.userAgent;
+    setPlatform(/android/i.test(ua) ? "android" : /iphone|ipad|ipod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) ? "ios" : null);
   }, []);
+
+  // Tapping an AI: Android opens the app with the prompt; iPhone uses the app link when the prompt
+  // fits in it, otherwise the share sheet (tap the app there). Always copied first.
+  async function openAi(e, ai) {
+    copyText(prompt).then((ok) => ok && onCopied?.());
+    if (platform === "android") {
+      e.preventDefault();
+      window.location.href = androidIntent(ai, prompt);
+      return;
+    }
+    if (platform === "ios" && !fits(prompt) && canShare) {
+      e.preventDefault();
+      try {
+        await navigator.share({ text: prompt });
+      } catch (err) {
+        if (err?.name !== "AbortError") window.open(ai.url(prompt), "_blank", "noopener");
+      }
+    }
+  }
 
   async function shareToApp() {
     setShareNote("");
@@ -59,7 +86,7 @@ export default function AiLinks({ prompt, onCopied }) {
       )}
 
       <p className="mt-3 mb-2 text-xs text-neutral-500">
-        {canShare ? "Or use the website:" : fits(prompt) ? "Or open it straight in:" : "Or open a chat (the prompt is copied, just paste it):"}
+        {platform === "android" ? "Or open it straight in the app:" : platform === "ios" ? (fits(prompt) ? "Or open it straight in:" : "Or pick an app (opens the share sheet):") : fits(prompt) ? "Or open it straight in:" : "Or open a chat (the prompt is copied, just paste it):"}
       </p>
       <div className="grid grid-cols-4 gap-2">
         {AIS.map((ai) => (
@@ -68,7 +95,7 @@ export default function AiLinks({ prompt, onCopied }) {
             href={ai.url(prompt)}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => copyText(prompt).then((ok) => ok && onCopied?.())}
+            onClick={(e) => openAi(e, ai)}
             className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-200 py-2.5 text-[11px] font-medium text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50 active:scale-95 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-800"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
