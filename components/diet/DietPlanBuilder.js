@@ -55,6 +55,7 @@ export default function DietPlanBuilder({ header }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [imported, setImported] = useState(null);
+  const [groceries, setGroceries] = useState([]); // the AI's weekly grocery list, saved with the plan
 
   useEffect(() => {
     const draft = takeDraft("diet");
@@ -62,6 +63,7 @@ export default function DietPlanBuilder({ header }) {
     setName(draft.name ?? "");
     setDays(draft.days.map((d) => ({ key: uid(), name: d.name, weekdays: d.weekdays ?? [], meals: d.meals.map((m) => ({ ...newMeal(), ...m, key: uid() })) })));
     setImported(draft.source ?? "PDF");
+    setGroceries(Array.isArray(draft.groceries) ? draft.groceries : []);
     // AI links are often invented: keep only videos YouTube confirms exist.
     const links = draft.days.flatMap((d) => d.meals.map((m) => m.videoUrl)).filter(Boolean);
     if (links.length)
@@ -111,6 +113,7 @@ export default function DietPlanBuilder({ header }) {
     setSaving(true);
     const plan = await saveNewDietPlan({
       name: name.trim(),
+      groceries,
       days: cleaned.map((d) => ({
         name: d.name.trim() || "Day",
         weekdays: d.weekdays,

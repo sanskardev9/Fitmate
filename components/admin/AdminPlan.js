@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Dumbbell, Utensils, Timer, Repeat } from "lucide-react";
 import { useAdminData, adminApi } from "./AdminShell";
+import { friendlyRecipe } from "@/lib/diet/groceries";
 import { card, WEEKDAYS, fullDate, userName, PageTitle, Skeleton } from "./ui";
 
 const SECTIONS = [
@@ -148,7 +149,7 @@ function DietDay({ items }) {
                 <summary className="cursor-pointer font-semibold text-emerald-700 select-none dark:text-emerald-400">
                   Recipe{m.alternatives?.length ? ` & ${m.alternatives.length} swaps` : ""}
                 </summary>
-                {m.recipe && <p className="mt-2 whitespace-pre-line text-neutral-600 dark:text-neutral-300">{m.recipe}</p>}
+                {m.recipe && <p className="mt-2 whitespace-pre-line text-neutral-600 dark:text-neutral-300">{friendlyRecipe(m.recipe)}</p>}
                 {m.alternatives?.length > 0 && (
                   <ul className="mt-2 space-y-1 border-t border-neutral-200 pt-2 dark:border-neutral-700">
                     {m.alternatives.map((a, i) => (

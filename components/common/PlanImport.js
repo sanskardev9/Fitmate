@@ -67,7 +67,7 @@ export default function PlanImport({ kind: fixedKind, returnTo, manualHref, show
   function importPasted(data, sourceName) {
     const parsed = parsePlanJson(data);
     if (parsed.kind === "backup") throw new Error("That is a FitMate backup file. Upload it in step 1 instead.");
-    openBuilder(parsed.kind, { name: parsed.name || sourceName || `My ${parsed.kind} plan`, source: "your AI chat", days: parsed.days });
+    openBuilder(parsed.kind, { name: parsed.name || sourceName || `My ${parsed.kind} plan`, source: "your AI chat", days: parsed.days, groceries: parsed.groceries });
   }
 
   // A file already in FitMate's format (or a backup): no AI needed.
@@ -78,7 +78,7 @@ export default function PlanImport({ kind: fixedKind, returnTo, manualHref, show
       onRestored?.();
       return;
     }
-    openBuilder(parsed.kind, { name: parsed.name || name, source: fileName, days: parsed.days });
+    openBuilder(parsed.kind, { name: parsed.name || name, source: fileName, days: parsed.days, groceries: parsed.groceries });
   }
 
   const [mode, setMode] = useState(null);
@@ -159,14 +159,16 @@ export const AI_RULES = {
     'DAYS: one entry in "days" per day of the plan, with its "weekdays". If every day is the same, use one day with all seven weekdays.',
     'SLOTS: "slot" is exactly one of Breakfast, Lunch, Snack, Dinner.',
     'NUMBERS: "calories" (kcal), "proteinG", "carbsG", "fatG" (grams) are plain numbers on every meal and every alternative. Estimate from ingredients if needed.',
-    'RECIPE: "recipe" = "Prep: X min" on line 1, then "Ingredients: item qty, item qty", then at most 4 numbered short steps.',
+    'RECIPE: "recipe" = "Prep: X min" on line 1, then "Ingredients: item amount, item amount", then at most 4 numbered short steps.',
+    'AMOUNTS: write each ingredient the way people cook, with grams in brackets: oils/ghee/butter in tsp or tbsp ("oil 1 tsp (5 g)"), vegetables and fruits by count ("onion 1 medium (100 g)", "tomato ½ medium (50 g)"), flour as rotis ("atta 2 rotis (60 g)"), curd/milk in cups or ml ("curd ½ cup (120 g)"), eggs by count, paneer/tofu/meat in grams. Amounts must be realistic to cook the dish (at least 1 tsp oil for anything fried, sautéed or tempered) and still add up to the macros.',
+    'GROCERIES: add a top-level "groceries" list = everything to buy for ONE week of this plan (all days, main meals; spices and staples too), in shop-friendly sizes rounded up to how it is sold ("Paneer (low-fat)": "1 kg", "Milk": "2 L", "Eggs": "1 dozen", "Onions": "1 kg", "Coriander": "1 bunch"). Each item {"item","amount","group"} with "group" exactly one of Vegetables, Fruits, Dairy & eggs, Protein, Pulses, Grains & flour, Nuts & seeds, Oils & spices, Other.',
     `CATEGORY (required on every meal AND every alternative): exactly one of ${DISH_CATEGORIES.join(", ")}. Decide by the main dish: "Besan chilla with curd" = Chilla & dosa, "Soya pulao" = Rice, "Sattu shake with toast" = Shake & smoothie.`,
     'DIET (required on every meal AND every alternative): "veg", "egg", "nonveg" or "vegan" = what that dish contains.',
     'ALTERNATIVES: every meal has EXACTLY 3 "alternatives". Each alternative is a DIFFERENT category from the main meal AND from the other two alternatives (main = Chilla & dosa -> alternatives e.g. Oats, Poha & upma, Sandwich & toast). Protein and calories within 10% of the main meal. Each alternative has the same fields as a meal: "name","category","diet","serving","calories","proteinG","carbsG","fatG","recipe" — but keep each alternative "recipe" to ONE short line (e.g. "Prep: 10 min. Cook besan batter with paneer filling.").',
-    'VARIETY (per slot, counting all meals + alternatives in the week): at least 4 different categories, EVERY category used has at least 3 dishes (if one would have only 1-2, add more of it or replace them), and no category above 40% of that slot. Never make every breakfast (or every lunch, every dinner) the same kind of dish.',
+    'VARIETY (per slot, meals + alternatives across the week): use at least 4 different categories, no category for more than 40% of that slot, and never the same main dish more than twice a week.',
     'VIDEO SEARCH (required on every meal AND every alternative): "videoSearch" = 2-5 words naming the MAIN dish to cook, the way people search YouTube for its recipe (e.g. "dal paneer tadka", "soya poha", "besan paneer chilla", "masala oats"). Leave out sides (roti, rice, curd, salad) and words like post-workout or high protein.',
-    'VIDEO: "videoUrl" only if you can search the web and found a real YouTube recipe for that exact dish; otherwise leave it out (FitMate finds one). Never invent video IDs.',
-    'CHECK SILENTLY BEFORE REPLYING (do not write the check): per slot, every category has 3+ dishes and there are 4+ categories; every meal has 3 alternatives in 3 other categories; every dish has "category" and "diet"; no dish uses ingredients I avoid; protein per meal and per day hits the target. Fix anything as you write. Your reply is still just the one short line + the code block.',
+    'VIDEO: never add "videoUrl" (FitMate finds the video from "videoSearch"). Do not search the web for anything.',
+    'BEFORE YOU FINISH (silently, don\'t write it): every meal has 3 alternatives in 3 other categories; every dish has "category", "diet" and "videoSearch"; nothing uses foods I avoid; each day hits my protein target. Your reply is still just the one line + the code block.',
   ],
 };
 
@@ -186,7 +188,7 @@ const aiPrompt = (kind) =>
   `Convert my ${kind} plan into JSON for the FitMate app.
 
 How to reply:
-- Reply format: start IMMEDIATELY with exactly this line: "⏳ Converting your plan. This takes about 1–3 minutes, keep this chat open. It's working.", then exactly ONE ${FENCE}json code block with the whole plan, then nothing else. Do not think or plan out loud before the code block; write it straight away.
+- Reply format: start IMMEDIATELY with exactly this line: "⏳ Converting your plan. This takes about 1–3 minutes, keep this chat open. It's working.", then exactly ONE ${FENCE}json code block with the whole plan, then nothing else. Do not think or plan out loud before the code block, and do not search the web; write it straight away from what you know.
 - Keep it compact: put each ${kind === "workout" ? "exercise" : "meal"} object on a single line, exactly like the example.
 
 Example of the exact structure:

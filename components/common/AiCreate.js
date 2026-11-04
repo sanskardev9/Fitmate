@@ -38,7 +38,7 @@ const QUESTIONS = {
     { id: "cuisine", q: "Food style", type: "one", options: ["Indian", "Continental", "Mixed"] },
     { id: "meals", q: "Meals a day", type: "one", options: ["3", "4", "5"] },
     { id: "cooking", q: "Cooking time per meal", type: "one", options: ["Under 15 min", "15–30 min", "Don't mind"] },
-    { id: "variety", q: "Meals across the week", type: "one", options: ["Different every day", "Rotate 2–3 menus", "Same every day"] },
+    { id: "variety", q: "Meals across the week", hint: "Rotating 2–3 menus is about twice as fast to create, and every meal still has 3 swaps for daily variety.", type: "one", options: ["Rotate 2–3 menus", "Different every day", "Same every day"], defaultValue: "Rotate 2–3 menus" },
     { id: "skip", q: "Avoid", type: "many", options: ["Nothing", "Dairy", "Gluten", "Nuts", "Eggs"] },
     { id: "whey", q: "Protein powder (whey)", type: "one", options: ["I have it", "Don't use"], defaultValue: "Don't use" },
   ],
@@ -114,7 +114,7 @@ function proteinPerMeal(profile, answers) {
 }
 
 export function buildPrompt(kind, profile, answers, extra, others = {}, training = null) {
-  const variety = answers.variety?.[0] ?? "Different every day";
+  const variety = answers.variety?.[0] ?? "Rotate 2–3 menus";
   const me = aboutMe(profile);
   const picked = QUESTIONS[kind]
     .filter((q) => !q.when || q.when(answers))
@@ -158,7 +158,7 @@ export function buildPrompt(kind, profile, answers, extra, others = {}, training
           training ? "- Training days (see my workout plan) get more carbs around the workout; rest days get fewer carbs; protein stays the same every day. Average calories across the week must hit my target." : "",
           "- Time meals around my training time: a carb + protein meal 1.5-3 h before training and a protein-rich meal within 2 h after. Mark those meals with \"timing\": \"pre-workout\" or \"post-workout\" (leave it out on other meals).",
           "- \"name\" is ONLY the dish name (e.g. \"Paneer Dal Curry\"). NEVER put Pre-workout, Post-workout, Rest day, Training day or meal labels in any name, for meals or alternatives.",
-          "- Everyday foods I can actually buy and cook, quantities in grams or household measures, realistic portions. Respect my diet type and foods to avoid.",
+          "- Everyday foods I can actually buy and cook, realistic portions, amounts as in the AMOUNTS rule. Respect my diet type and foods to avoid.",
           "- MOST IMPORTANT: food must be easy to make, or I won't follow it. Prefer simple home staples I already know over fancy recipes.",
           answers.whey?.[0] === "I have it"
             ? "- Protein powder: I have whey. Use it in at most ONE dish per day; every other dish (and every alternative) gets its protein from food."
@@ -167,7 +167,7 @@ export function buildPrompt(kind, profile, answers, extra, others = {}, training
           "- Every category keeps its own whey-free versions. Example high-protein OATS without powder: oats cooked in milk + hung curd + peanut butter + chia; savoury masala oats with soya granules; oats chilla with paneer. Do the same for poha (with soya/peanuts + curd), sandwiches (paneer/soya/hung-curd filling), chilla (besan/moong + paneer/tofu).",
           "- Alternatives and variety matter most after easy food: follow the ALTERNATIVES, VARIETY and CHECK rules below exactly. Alternatives follow my diet type, foods to avoid and cooking time too.",
           "- Keep every meal EASY: at most 6 common ingredients, no special equipment, within my cooking time. Reuse ingredients across the week so the shopping list stays short, and batch-cook where it helps (e.g. dal or rice for 2 days).",
-          "- Make it easy to understand: plain meal names (local name in brackets if useful). In \"recipe\" write exactly this layout: \"Prep: X min\" on the first line, then \"Ingredients: item qty, item qty\", then numbered steps \"1. ... 2. ...\" with at most 4 short steps in simple words.",
+          "- Make it easy to understand: plain meal names (local name in brackets if useful). In \"recipe\" write exactly this layout: \"Prep: X min\" on the first line, then \"Ingredients: …\" (amounts as in the AMOUNTS rule), then numbered steps \"1. ... 2. ...\" with at most 4 short steps in simple words.",
         ]
           .filter(Boolean)
           .join("\n");
@@ -184,7 +184,7 @@ My choices:
 ${picked.length ? picked.map((x) => `- ${x}`).join("\n") : "- None, use sensible defaults"}
 
 Do NOT ask me any questions. Anything not given: choose sensible defaults.
-Reply format: start IMMEDIATELY with exactly this line: "⏳ Building your plan. This takes about 2–3 minutes, keep this chat open. It's working.", then exactly ONE ${FENCE}json code block with the whole plan, then nothing else. Do not think or plan out loud before the code block; write it straight away.
+Reply format: start IMMEDIATELY with exactly this line: "⏳ Building your plan. This takes about 2–3 minutes, keep this chat open. It's working.", then exactly ONE ${FENCE}json code block with the whole plan, then nothing else. Do not think or plan out loud before the code block, and do not search the web; write it straight away from what you know.
 ${fit}
 - Keep it compact: one ${kind === "workout" ? "exercise" : "meal"} object per line, exactly like this example:
 ${FENCE}json

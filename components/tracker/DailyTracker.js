@@ -15,6 +15,7 @@ import RecipeVideo from "@/components/diet/RecipeVideo";
 import { Repeat2, Plus, Trash2, X } from "lucide-react";
 import AddFoodSheet from "@/components/diet/AddFoodSheet";
 import MealSwap from "@/components/diet/MealSwap";
+import { friendlyRecipe } from "@/lib/diet/groceries";
 import { dishName, mealTiming } from "@/lib/diet/dishName";
 
 const ICONS = {
@@ -367,7 +368,7 @@ export function Nutrition({ data, title = "Today's meals" }) {
                       <Plus className="h-4 w-4" /> Add to this meal
                     </button>
                     {/* After a swap, show the recipe + video of what you actually chose. */}
-                    {(swapped ? swapped.recipe : m.recipe) && <p className="rounded-xl bg-neutral-50 p-3 text-xs leading-relaxed whitespace-pre-line text-neutral-600 dark:bg-neutral-950 dark:text-neutral-400">{swapped ? swapped.recipe : m.recipe}</p>}
+                    {(swapped ? swapped.recipe : m.recipe) && <p className="rounded-xl bg-neutral-50 p-3 text-xs leading-relaxed whitespace-pre-line text-neutral-600 dark:bg-neutral-950 dark:text-neutral-400">{friendlyRecipe(swapped ? swapped.recipe : m.recipe)}</p>}
                     <RecipeVideo key={swapped ? swapped.name : m.name} url={swapped ? swapped.videoUrl : m.videoUrl} dish={swapped ? swapped.name : m.name} search={(swapped ?? m).videoSearch} />
                   </div>
                 )}
