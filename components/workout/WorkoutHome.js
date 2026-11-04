@@ -86,7 +86,15 @@ export default function WorkoutHome() {
                           {formOpen === e.id && <FormVideo name={e.name} />}
                         </li>
                     ));
-                    if (sec === "main") return rows;
+                    if (sec === "main")
+                      return [
+                        <li key="main-head" className="flex items-center gap-2 pt-3 pb-1 text-sm">
+                          <span className="h-4 w-1 rounded-full bg-emerald-500" />
+                          <span className="font-semibold text-emerald-700 dark:text-emerald-400">Main set</span>
+                          <span className="text-neutral-500">· {items.length} {items.length === 1 ? "exercise" : "exercises"}</span>
+                        </li>,
+                        ...rows,
+                      ];
                     const open = foldOpen[sec];
                     return (
                       <li key={sec} className="py-1">
