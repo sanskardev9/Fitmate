@@ -218,7 +218,6 @@ export async function copyText(text) {
 // "I have a plan": upload it (PDF, JSON, text) -> we build a prompt that includes the plan and
 // FitMate's format -> any AI converts it -> paste the reply back -> review before saving.
 // Files already in FitMate's format skip the AI entirely.
-const MAX_PLAN_CHARS = 60000;
 
 async function readSource(file) {
   const base = file.name.replace(/\.(pdf|json|txt|md|csv)$/i, "").replace(/[_-]+/g, " ").trim();
@@ -253,7 +252,8 @@ async function readSource(file) {
 function planPrompt(kind, source) {
   const head = aiPrompt(kind).replace(/Here is my plan \(text or attached file\):\n$/, "");
   if (source.scanned) return `${head}My plan is in the file I've attached (a scanned PDF). Read it carefully and convert all of it.`;
-  const text = source.text.length > MAX_PLAN_CHARS ? `${source.text.slice(0, MAX_PLAN_CHARS)}\n[...cut off here]` : source.text;
+  // The whole plan, never shortened: accuracy matters more than prompt length.
+  const text = source.text;
   return `${head}Here is my plan, exactly as written in my ${source.note?.toLowerCase() ?? "file"}${source.file ? ` "${source.file}"` : ""}. Convert all of it; don't drop days, sets or meals.\n\n<<<PLAN\n${text.trim()}\nPLAN>>>`;
 }
 
