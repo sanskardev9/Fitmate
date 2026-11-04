@@ -1,5 +1,6 @@
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/common/ServiceWorkerRegister";
+import PullToRefresh from "@/components/common/PullToRefresh";
 import Splash from "@/components/common/Splash";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import SyncProvider from "@/components/sync/SyncProvider";
@@ -43,6 +44,7 @@ export default function RootLayout({ children }) {
           </SyncProvider>
         </AuthProvider>
         <ServiceWorkerRegister />
+        <PullToRefresh />
       </body>
     </html>
   );
