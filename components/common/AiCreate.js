@@ -23,7 +23,7 @@ const QUESTIONS = {
   workout: [
     { id: "level", q: "Your level", type: "one", options: ["Beginner", "Intermediate", "Advanced"], fromProfile: (p) => (p?.experience ? p.experience[0].toUpperCase() + p.experience.slice(1) : null) },
     { id: "chasing", q: "Working towards", hint: "Pick as many as you like.", popular: ["Muscle-up", "Front lever", "Planche", "Handstand", "Human flag", "One-arm pull-up", "Muscle size", "Raw strength"], type: "search", placeholder: "Search skills or type your own", options: ["Muscle-up", "Bar muscle-up", "Ring muscle-up", "Front lever", "Back lever", "Planche", "Full planche", "Straddle planche", "Handstand", "Handstand push-up", "Press to handstand", "Human flag", "One-arm pull-up", "One-arm push-up", "Pistol squat", "Dragon flag", "L-sit", "V-sit", "Manna", "Maltese", "Iron cross", "Weighted pull-ups", "Weighted dips", "Muscle size", "Raw strength", "Endurance", "Fat loss", "Mobility / flexibility"] },
-    { id: "bests", q: "Max reps in one set", type: "numbers", options: [], fields: [["pullups", "Pull-ups"], ["dips", "Dips"], ["pushups", "Push-ups"]] },
+    { id: "bests", q: "Max strict reps in one set", hint: "Strict form only: full range, controlled, no kipping, swinging or half reps.", type: "numbers", options: [], fields: [["pullups", "Pull-ups"], ["dips", "Dips"], ["pushups", "Push-ups"]] },
     { id: "where", q: "Where do you train?", type: "one", options: ["Gym", "Home", "Outdoors"] },
     { id: "equipment", q: "What do you have?", type: "many", options: ["Nothing", "Pull-up bar", "Dip bars / parallettes", "Rings", "Dumbbells", "Resistance bands", "Kettlebell", "Barbell", "Bench"], other: "Something else? e.g. weight vest, cable machine", when: (a) => a.where && a.where[0] !== "Gym" },
     { id: "days", q: "Days per week", type: "one", options: ["3", "4", "5", "6"], fromProfile: (p) => (p?.training_days_per_week ? String(p.training_days_per_week) : null) },
@@ -119,7 +119,7 @@ export function buildPrompt(kind, profile, answers, extra, others = {}, training
     .map((q) => {
       if (q.type === "numbers") {
         const nums = q.fields.map(([k, label]) => (others[q.id]?.[k] ? `${label} ${others[q.id][k]}` : null)).filter(Boolean);
-        return nums.length ? `${q.q}: ${nums.join(", ")}` : null;
+        return nums.length ? `${q.q}${q.id === "bests" ? " (strict form: full range, no kipping or half reps)" : ""}: ${nums.join(", ")}` : null;
       }
       if (q.type === "search" && answers[q.id]?.length) {
         const groups = {};

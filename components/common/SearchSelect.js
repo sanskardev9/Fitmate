@@ -5,6 +5,16 @@ import { inputClass } from "./ui";
 
 // Controlled searchable combobox. Typing reports free text through `onChange`; picking a
 // suggestion (or the "Use …" row) calls `onSelect`, so a missing library entry never blocks anyone.
+// Loose matching: ignores case, hyphens, spaces and word order, and plural "s".
+// "90 degree handstand pushup" finds "90-degree Handstand Push-up Lean".
+const compact = (t) => String(t).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+const tokens = (t) =>
+  String(t)
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+    .map((w) => (w.length > 3 ? w.replace(/s$/, "") : w));
+
 export default function SearchSelect({ options, value, onChange, onSelect, placeholder = "Search…", limit = 8, className = "" }) {
   const query = value ?? "";
   const setQuery = onChange;
@@ -13,20 +23,25 @@ export default function SearchSelect({ options, value, onChange, onSelect, place
   const listId = useId();
 
   const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return options.slice(0, limit);
+    const q0 = compact(query);
+    if (!q0) return options.slice(0, limit);
+    // "pushups" should find "Push-up": try the singular too.
+    const q = q0.length > 4 && q0.endsWith("s") ? q0.slice(0, -1) : q0;
+    const words = tokens(query);
     const starts = [];
     const contains = [];
+    const allWords = [];
     for (const o of options) {
-      const n = o.name.toLowerCase();
+      const n = compact(o.name);
       if (n.startsWith(q)) starts.push(o);
-      else if (n.includes(q) || o.hint?.toLowerCase().includes(q)) contains.push(o);
+      else if (n.includes(q)) contains.push(o);
+      else if (words.length > 1 && words.every((w) => n.includes(w))) allWords.push(o);
     }
-    return [...starts, ...contains].slice(0, limit);
+    return [...starts, ...contains, ...allWords].slice(0, limit);
   }, [options, query, limit]);
 
   const trimmed = query.trim();
-  const exact = matches.some((m) => m.name.toLowerCase() === trimmed.toLowerCase());
+  const exact = matches.some((m) => compact(m.name) === compact(trimmed));
   const rows = trimmed && !exact ? [...matches, { name: trimmed, custom: true }] : matches;
 
   function choose(option) {
