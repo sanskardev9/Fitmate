@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff, Dumbbell, Flame, Timer, Minus, Plus, Send, Share, Sunrise, Utensils } from "lucide-react";
+import { Bell, BellOff, Dumbbell, Flame, Timer, Send, Share, Sunrise, Utensils, Clock, ChevronRight, ChevronDown } from "lucide-react";
+import TimeDial from "@/components/common/TimeDial";
 import { useAuth } from "./AuthProvider";
 import { cachedProfile, fetchProfile } from "@/lib/services/profileService";
 import { supabase } from "@/lib/supabase/client";
@@ -25,6 +26,8 @@ export default function NotificationsCard() {
   const [restOn, setRestOn] = useState(true);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(null);
+  const [dialOpen, setDialOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false); // folded until tapped
 
   useEffect(() => {
     const s = pushSupport();
@@ -118,21 +121,33 @@ export default function NotificationsCard() {
     } catch {}
   }
   const minutes = toMinutes(prefs.notify_workout_time);
-  const shiftTime = (d) => update({ notify_workout_time: toTime((minutes + d + 1440) % 1440) });
+  const dial = dialOpen && (
+    <TimeDial
+      title="Workout reminder"
+      value={toTime(minutes)}
+      onClose={() => setDialOpen(false)}
+      onSave={(t) => {
+        update({ notify_workout_time: t });
+        setDialOpen(false);
+      }}
+    />
+  );
 
   return (
     <section className="rounded-3xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="flex items-center gap-3">
+      {dial}
+      <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} className="flex w-full items-center gap-3 text-left">
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${on ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800"}`}>
           {on ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
         </span>
-        <div className="min-w-0 flex-1">
-          <h2 className="font-semibold">Notifications</h2>
-          <p className="text-xs text-neutral-500">{on ? "On for this device" : "Reminders so you never lose your streak"}</p>
-        </div>
-      </div>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold">Notifications</span>
+          <span className="block text-xs text-neutral-500">{on ? `On · workout reminder ${label(minutes)}` : "Reminders so you never lose your streak"}</span>
+        </span>
+        <ChevronDown className={`h-5 w-5 shrink-0 text-neutral-400 transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
 
-      {support.needsInstall ? (
+      {!expanded ? null : support.needsInstall ? (
         <div className="mt-4 rounded-2xl bg-neutral-50 p-4 text-sm dark:bg-neutral-800/50">
           <p className="font-semibold">Add FitMate to your Home Screen first</p>
           <p className="mt-1 text-neutral-600 dark:text-neutral-300">
@@ -173,15 +188,14 @@ export default function NotificationsCard() {
             <li className="py-3">
               <Row Icon={Dumbbell} tint="text-emerald-600" title="Workout reminder" sub="On days your plan has a workout" checked={prefs.notify_workout} onChange={(v) => update({ notify_workout: v })} />
               {prefs.notify_workout && (
-                <div className="mt-3 ml-8 flex items-center gap-2">
-                  <button type="button" onClick={() => shiftTime(-30)} aria-label="Earlier" className="flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800">
-                    <Minus className="h-4 w-4" />
-                  </button>
-                  <span className="min-w-24 text-center text-sm font-semibold tabular-nums">{label(minutes)}</span>
-                  <button type="button" onClick={() => shiftTime(30)} aria-label="Later" className="flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
+                <button type="button" onClick={() => setDialOpen(true)} className="mt-3 ml-8 flex items-center gap-3 rounded-xl border border-neutral-200 px-3 py-2 text-left transition-colors hover:border-emerald-500 hover:bg-emerald-500/5 dark:border-neutral-700">
+                  <Clock className="h-5 w-5 text-emerald-600" />
+                  <span>
+                    <span className="block text-lg font-bold tabular-nums">{label(minutes)}</span>
+                    <span className="block text-[11px] text-neutral-500">Tap to change</span>
+                  </span>
+                  <ChevronRight className="ml-2 h-4 w-4 text-neutral-400" />
+                </button>
               )}
             </li>
             <li className="py-3">
@@ -204,7 +218,7 @@ export default function NotificationsCard() {
           </div>
         </>
       )}
-      {note && <p className={`mt-3 text-sm ${note.ok ? "text-emerald-700 dark:text-emerald-400" : "text-rose-600"}`}>{note.text}</p>}
+      {expanded && note && <p className={`mt-3 text-sm ${note.ok ? "text-emerald-700 dark:text-emerald-400" : "text-rose-600"}`}>{note.text}</p>}
     </section>
   );
 }

@@ -15,6 +15,7 @@ import Segmented from "./Segmented";
 import { FOCUSES } from "@/lib/focuses";
 import { useScrollTopOn } from "@/lib/useScrollTop";
 import AiWaitHint from "./AiWaitHint";
+import { supabase } from "@/lib/supabase/client";
 import AiLinks from "./AiLinks";
 
 // A few taps inside FitMate, then ONE prompt; the AI replies with the plan directly, no questions.
@@ -291,6 +292,9 @@ export default function AiCreate({ kinds, onImport, onBack }) {
     setAnswers(out);
     setCopied(false);
     setPreference(storeKey(kind), out);
+    // "When do you train?" also sets the workout reminder time (Morning 7 am, Afternoon 1 pm, Evening 6 pm).
+    const time = q.id === "trainTime" ? { Morning: "07:00", Afternoon: "13:00", Evening: "18:00" }[next?.[0]] : null;
+    if (time && user && supabase) supabase.from("profiles").update({ notify_workout_time: time }).eq("id", user.id).then(() => {});
   }
 
   function toggle(q, option) {

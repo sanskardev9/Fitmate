@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Star, Check } from "lucide-react";
+import FoldHeader, { FoldButton } from "@/components/common/FoldHeader";
 import { supabase } from "@/lib/supabase/client";
 
 const KINDS = [
@@ -13,6 +14,7 @@ const KINDS = [
 
 // Rate FitMate and send feedback. Stored in public.feedback (each user sees only their own).
 export default function FeedbackCard() {
+  const [open, setOpen] = useState(false); // folded until tapped
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [kind, setKind] = useState("review");
@@ -50,10 +52,16 @@ export default function FeedbackCard() {
   }
 
   const shown = hover || rating;
+  if (!open) return <FoldHeader Icon={Star} tint="bg-amber-500/10 text-amber-500" title="Rate FitMate" sub="Tell us how it's going, share an idea or report a bug" onOpen={() => setOpen(true)} />;
   return (
     <form onSubmit={send} className="rounded-3xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-      <h2 className="font-semibold">Rate FitMate</h2>
-      <p className="text-sm text-neutral-500">How is it helping you stay on track?</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">Rate FitMate</h2>
+          <p className="text-sm text-neutral-500">How is it helping you stay on track?</p>
+        </div>
+        <FoldButton onClose={() => setOpen(false)} />
+      </div>
 
       <div className="mt-3 flex gap-1" onMouseLeave={() => setHover(0)} role="radiogroup" aria-label="Rating">
         {[1, 2, 3, 4, 5].map((n) => (

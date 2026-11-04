@@ -1,7 +1,8 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeEmail, validEmail, hashCode, sameHash, MAX_ATTEMPTS } from "@/lib/server/resetCodes";
 
-// Step 2: check the code and set the new password. 5 wrong tries or 10 minutes and the code is gone.
+// Step 2: check the code ({ checkOnly: true } = just verify, keep the code), then set the new password
+// (checks the same code again and uses it up). 5 wrong tries or 10 minutes and the code is gone.
 export async function POST(request) {
   const admin = getSupabaseAdmin();
   if (!admin) return Response.json({ error: "Not configured." }, { status: 503 });
@@ -15,8 +16,9 @@ export async function POST(request) {
   const email = normalizeEmail(body?.email);
   const code = String(body?.code ?? "").replace(/\D/g, "");
   const password = String(body?.password ?? "");
+  const checkOnly = body?.checkOnly === true;
   if (!validEmail(email) || code.length !== 6) return Response.json({ error: "Enter the 6-digit code from your email." }, { status: 400 });
-  if (password.length < 6 || password.length > 72) return Response.json({ error: "Password must be 6 to 72 characters." }, { status: 400 });
+  if (!checkOnly && (password.length < 6 || password.length > 72)) return Response.json({ error: "Password must be 6 to 72 characters." }, { status: 400 });
 
   const wrong = { error: "That code is wrong or has expired. Request a new one." };
   const { data: row } = await admin.from("password_reset_codes").select("*").eq("email", email).maybeSingle();
@@ -32,6 +34,8 @@ export async function POST(request) {
     const left = MAX_ATTEMPTS - attempts;
     return Response.json({ error: left > 0 ? `Wrong code. ${left} ${left === 1 ? "try" : "tries"} left.` : wrong.error }, { status: 400 });
   }
+
+  if (checkOnly) return Response.json({ ok: true, verified: true });
 
   // One-time: remove the code first, then change the password.
   await admin.from("password_reset_codes").delete().eq("email", email);

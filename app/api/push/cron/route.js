@@ -41,7 +41,16 @@ async function run(request) {
   if (e2) return Response.json({ error: e2.message }, { status: 500 });
 
   const now = new Date();
-  const due = profiles.flatMap((p) => dueReminders(p, now).map((r) => ({ ...r, user_id: p.id })));
+  // What each person already got in the last 24 h (for pacing).
+  const { data: recentLog } = await admin.from("notification_log").select("user_id, sent_at, sent").in("user_id", ids).gte("sent_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString());
+  const pace = {};
+  for (const l of recentLog ?? []) {
+    if (!l.sent) continue;
+    const p = (pace[l.user_id] ??= { count: 0, last_at: null });
+    p.count++;
+    if (!p.last_at || l.sent_at > p.last_at) p.last_at = l.sent_at;
+  }
+  const due = profiles.flatMap((p) => dueReminders({ ...p, sent_today: pace[p.id] }, now).map((r) => ({ ...r, user_id: p.id })));
   if (!due.length) return Response.json({ users: ids.length, due: 0, sent: 0, snoozed });
 
   // Claim each reminder in the log first, so a retry or overlapping run never sends it twice.

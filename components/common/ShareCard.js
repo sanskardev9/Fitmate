@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Share2, Link2, Check, Users } from "lucide-react";
 import { loadStreak } from "@/lib/services/streak";
+import FoldHeader, { FoldButton } from "./FoldHeader";
 import { copyText } from "./PlanImport";
 
 // Invite friends: native share sheet on phones, WhatsApp, or copy the link. Uses their streak.
 export default function ShareCard() {
+  const [open, setOpen] = useState(false); // folded until tapped
   const streak = useLiveQuery(() => loadStreak().then((s) => s.current), []);
   const [copied, setCopied] = useState(false);
   const url = typeof window !== "undefined" ? window.location.origin : "https://fitmateapp.vercel.app";
@@ -34,6 +36,7 @@ export default function ShareCard() {
     }
   }
 
+  if (!open) return <FoldHeader Icon={Users} tint="bg-emerald-600 text-white" title="Bring a friend" sub="Plans are easier to follow together" onOpen={() => setOpen(true)} />;
   return (
     <section className="relative overflow-hidden rounded-3xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-white to-white p-5 dark:via-neutral-900 dark:to-neutral-900">
       <div className="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
@@ -41,10 +44,11 @@ export default function ShareCard() {
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/30">
           <Users className="h-5 w-5" />
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h2 className="font-semibold">Bring a friend</h2>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">Plans are easier to follow together. Share FitMate with someone who trains with you.</p>
         </div>
+        <FoldButton onClose={() => setOpen(false)} />
       </div>
       <div className="relative mt-4 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2">
         <button type="button" onClick={share} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700 active:scale-[0.99]">
