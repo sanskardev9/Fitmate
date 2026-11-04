@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { isMain, SECTION_LABEL } from "@/lib/workout/sections";
 import { X, Timer, Check, Play, Plus, Minus, ArrowLeftRight } from "lucide-react";
 import Link from "next/link";
@@ -324,12 +324,8 @@ export default function ActiveSession() {
       {timing && timingEx && (
         <HoldTimer
           title={`${timingEx.name} · set ${timing.idx + 1}`}
-          target={targetOf(timingEx)}
+          target={Number(draftFor(timingEx, timing.n, timing.idx).value) || targetOf(timingEx)}
           onClose={() => setTiming(null)}
-          onUse={(secs) => {
-            setDraft(timingEx, timing.n, { value: String(secs) }, timing.idx);
-            setTiming(null);
-          }}
           onLog={(secs) => {
             const t = timing;
             setDraft(timingEx, t.n, { value: String(secs) }, t.idx);
@@ -470,82 +466,77 @@ function SetRow({ rowId, label, ex, cols, weighted, draft, logged, isNext, onDra
   );
 }
 
-// Stopwatch for a hold: nothing starts until Start is pressed; Pause, Reset, then log the time.
-function HoldTimer({ title, target, onClose, onUse, onLog }) {
-  const [startAt, setStartAt] = useState(null);
-  const [banked, setBanked] = useState(0);
+// Hold timer (opened by a Start button, so it starts at once): 3-2-1 to get into position -> counts down the target -> at 0 it stops,
+// plays the done sound and logs the set by itself. Stop early logs the seconds actually held.
+function HoldTimer({ title, target, onClose, onLog }) {
+  const goal = Number(target) || 30;
+  const [phase, setPhase] = useState("ready"); // ready | hold | done
+  const [t0] = useState(() => Date.now());
+  useEffect(() => unlockAudio(), []);
   const [, tick] = useState(0);
-  const [beeped, setBeeped] = useState(false);
-  const running = startAt != null;
-  const ms = banked + (running ? Date.now() - startAt : 0);
-  const secs = Math.floor(ms / 1000);
-  const pct = target ? Math.min(100, (ms / (target * 1000)) * 100) : 0;
-  const reached = target && secs >= target;
+  const elapsed = (Date.now() - t0) / 1000;
+  const readyLeft = Math.ceil(3 - elapsed);
+  const held = phase === "hold" ? Math.max(0, elapsed - 3) : phase === "done" ? goal : 0;
+  const left = Math.max(0, Math.ceil(goal - held));
+  const pct = Math.min(100, (held / goal) * 100);
 
+  const logRef = useRef(onLog);
   useEffect(() => {
-    if (!running) return;
-    const t = setInterval(() => tick((x) => x + 1), 100);
+    logRef.current = onLog;
+  }, [onLog]);
+  // Ticks the clock. 3-2-1 over -> hold. Target reached -> done: sound, buzz, log, close.
+  useEffect(() => {
+    if (phase !== "ready" && phase !== "hold") return;
+    const t = setInterval(() => {
+      const e = (Date.now() - t0) / 1000;
+      if (phase === "ready" && e >= 3) {
+        navigator.vibrate?.(80);
+        setPhase("hold");
+      } else if (phase === "hold" && e - 3 >= goal) {
+        setPhase("done");
+        restAlert();
+        setTimeout(() => logRef.current(goal), 1200);
+      } else tick((x) => x + 1);
+    }, 100);
     return () => clearInterval(t);
-  }, [running]);
+  }, [phase, t0, goal]);
 
-  useEffect(() => {
-    if (reached && running && !beeped) {
-      setBeeped(true);
-      restAlert();
-    }
-  }, [reached, running, beeped]);
+  const stop = () => {
+    const secs = Math.floor(held);
+    if (secs > 0) onLog(secs);
+    else onClose();
+  };
 
-  function toggle() {
-    unlockAudio();
-    if (running) {
-      setBanked(ms);
-      setStartAt(null);
-    } else setStartAt(Date.now());
-  }
-
-  function reset() {
-    setStartAt(null);
-    setBanked(0);
-    setBeeped(false);
-  }
+  const big = phase === "ready" ? readyLeft : phase === "done" ? "✓" : left >= 60 ? formatDuration(left) : left;
+  const sub = phase === "ready" ? "Get in position" : phase === "done" ? `${goal}s done` : "Hold it";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center" onClick={phase === "hold" ? undefined : onClose}>
       <div className="animate-fade-up w-full max-w-sm rounded-t-3xl bg-white p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-center sm:rounded-3xl dark:bg-neutral-900" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between text-left">
+        <div className="flex items-center justify-between gap-3 text-left">
           <p className="min-w-0 truncate text-sm font-medium text-neutral-500">{title}</p>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-neutral-400">
-            ✕
+          <button type="button" onClick={onClose} aria-label="Cancel" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="relative mx-auto mt-6 h-56 w-56">
           <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
             <circle cx="60" cy="60" r="54" fill="none" strokeWidth="7" className="stroke-neutral-100 dark:stroke-neutral-800" />
-            <circle cx="60" cy="60" r="54" fill="none" strokeWidth="7" strokeLinecap="round" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - pct} className={reached ? "stroke-emerald-500" : "stroke-sky-500"} />
+            <circle cx="60" cy="60" r="54" fill="none" strokeWidth="7" strokeLinecap="round" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - pct} className={`transition-[stroke-dashoffset] duration-100 ${phase === "done" ? "stroke-emerald-500" : "stroke-sky-500"}`} />
           </svg>
           <span className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={`text-6xl font-semibold tabular-nums ${reached ? "text-emerald-500" : ""}`}>{formatDuration(secs)}</span>
-            <span className="mt-1 text-xs text-neutral-500">{target ? (reached ? "Target reached" : `Target ${target}s`) : "Hold"}</span>
+            <span className={`text-7xl font-semibold tabular-nums ${phase === "done" ? "text-emerald-500" : phase === "ready" ? "text-amber-500" : ""}`}>{big}</span>
+            <span className="mt-1 text-sm text-neutral-500">{sub}</span>
           </span>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <button type="button" onClick={reset} disabled={!ms} className="rounded-2xl border border-neutral-300 py-4 text-base font-semibold disabled:opacity-40 dark:border-neutral-700">
-            Reset
+        {(phase === "ready" || phase === "hold") && (
+          <button type="button" onClick={stop} className="mt-6 w-full rounded-2xl bg-neutral-900 py-4 text-lg font-semibold text-white active:scale-[0.99] dark:bg-white dark:text-neutral-900">
+            {phase === "hold" && Math.floor(held) > 0 ? `Stop · log ${Math.floor(held)}s` : "Cancel"}
           </button>
-          <button type="button" onClick={toggle} className={`rounded-2xl py-4 text-base font-semibold text-white ${running ? "bg-amber-500" : "bg-emerald-600"}`}>
-            {running ? "Pause" : ms ? "Resume" : "Start"}
-          </button>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <button type="button" disabled={!secs} onClick={() => onUse(secs)} className="rounded-xl py-3 font-medium text-neutral-600 disabled:opacity-40 dark:text-neutral-300">
-            Use time
-          </button>
-          <button type="button" disabled={!secs} onClick={() => onLog(secs)} className="rounded-xl bg-neutral-900 py-3 font-semibold text-white disabled:opacity-40 dark:bg-white dark:text-neutral-900">
-            Log set ({secs}s)
-          </button>
-        </div>
+        )}
+        {phase === "done" && <p className="mt-6 py-4 text-lg font-semibold text-emerald-600">Set logged</p>}
       </div>
     </div>
   );
