@@ -27,7 +27,7 @@ export default function MiniPlayer() {
   return (
     <div className={`fixed right-3 z-[75] w-[min(15rem,calc(100vw-1.5rem))] md:w-80 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl md:right-4 dark:border-neutral-800 dark:bg-neutral-900 ${place}`}>
       <div className="relative aspect-video w-full bg-black">
-        <iframe key={track.id} className="absolute inset-0 h-full w-full" src={src} title={track.title} allow="autoplay; encrypted-media; picture-in-picture" />
+        <iframe key={track.id} className="absolute inset-0 h-full w-full" src={src} title={track.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen />
       </div>
       <div className="flex items-center gap-1 px-2 py-1.5">
         <span className="min-w-0 flex-1 px-1">
