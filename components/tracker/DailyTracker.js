@@ -308,6 +308,23 @@ export function Nutrition({ data, title = "Today's meals" }) {
         // foods from today's own meals first. One tap logs it.
         const tip = gapSuggestions({ targets, eaten, meals: today.meals, logs: today.logs, swaps: data.swaps });
         if (!tip) return null;
+        if (tip.type === "over")
+          return (
+            <div className="mt-3 rounded-xl bg-amber-500/10 px-3.5 py-3 text-xs text-amber-900 dark:text-amber-200">
+              <p>
+                <b className="font-semibold">Today&apos;s meals are {tip.over} kcal over your target.</b> {tip.cuts.length ? (tip.later ? "Next time, try:" : "Easy cuts:") : "Eat a little less of the carbs (rice, roti) to stay on target."}
+              </p>
+              {tip.cuts.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {tip.cuts.map((c) => (
+                    <span key={c.label} className="rounded-full bg-white px-3 py-1.5 font-semibold text-amber-800 ring-1 ring-amber-500/20 dark:bg-neutral-900 dark:text-amber-200">
+                      {c.label} <span className="font-normal opacity-70">· {c.slot.toLowerCase()} · −{c.kcal} kcal</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
         const what = { calories: "calories", proteinG: "protein", carbsG: "carbs", fatG: "fat" }[tip.focus];
         const allEaten = today.meals.length > 0 && today.eatenPlanned >= today.meals.length;
         return (
