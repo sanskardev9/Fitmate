@@ -18,6 +18,7 @@ import NotifyNudge from "./NotifyNudge";
 import InstallNudge from "./InstallNudge";
 import StreakCelebration from "./StreakCelebration";
 import CheckInCard from "./CheckInCard";
+import BlockReviewCard from "./BlockReviewCard";
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -72,6 +73,7 @@ export default function HomeToday() {
       </header>
 
       <NextUp daily={daily} onEnd={endWorkout} />
+      <BlockReviewCard />
       <CheckInCard />
       {daily.prefs.activeDietPlanId ? <Nutrition data={daily} /> : <AddDiet />}
       <StreakCard streak={streak} goal={Number(data.prefs.streakGoal) || null} />

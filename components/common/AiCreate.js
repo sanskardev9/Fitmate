@@ -115,7 +115,7 @@ function proteinPerMeal(profile, answers) {
   return target ? Math.round(target / meals) : "an equal share of my daily protein";
 }
 
-export function buildPrompt(kind, profile, answers, extra, others = {}, training = null) {
+export function buildPrompt(kind, profile, answers, extra, others = {}, training = null, lastBlock = null) {
   const variety = answers.variety?.[0] ?? "Rotate 2–3 menus";
   const me = aboutMe(profile);
   const picked = QUESTIONS[kind]
@@ -178,11 +178,12 @@ export function buildPrompt(kind, profile, answers, extra, others = {}, training
     kind === "diet" && training
       ? `\nMy current workout plan (${training.name}):\n${training.lines.map((l) => `- ${l}`).join("\n")}\n- Rest days: ${training.rest.join(", ") || "none"}\n`
       : "";
+  const blockText = lastBlock ? `\nMy last 4-week block (build the NEXT block from it: progress what improved, keep what worked, change what I avoided):\n${lastBlock.split("\n").map((l) => `- ${l}`).join("\n")}\n` : "";
   return `Create a personalised ${kind} plan for me for the FitMate app.
 
 About me:
 ${me.length ? me.map((x) => `- ${x}`).join("\n") : "- Adult, general fitness"}
-${trainingBlock}
+${trainingBlock}${blockText}
 My choices:
 ${picked.length ? picked.map((x) => `- ${x}`).join("\n") : "- None, use sensible defaults"}
 
@@ -233,7 +234,7 @@ export default function AiCreate({ kinds, onImport, onBack }) {
   async function copyPrompt() {
     const p = await ensureProfile();
     if (!p && needsAbout) return false;
-    return copyText(buildPrompt(kind, p ?? profile, answers, extra, others, training));
+    return copyText(buildPrompt(kind, p ?? profile, answers, extra, others, training, lastBlock));
   }
   const [kind, setKind] = useState(kinds[0]);
   const [answers, setAnswers] = useState({});
@@ -241,6 +242,13 @@ export default function AiCreate({ kinds, onImport, onBack }) {
   const [others, setOthers] = useState({});
   const [customSkills, setCustomSkills] = useState([]);
   const [training, setTraining] = useState(null);
+  // Results of the block that just ended (set from the "Block done" card), for the next block.
+  const [lastBlock, setLastBlock] = useState(null);
+  useEffect(() => {
+    getPreferences()
+      .then((p) => setLastBlock(p.nextBlockContext || null))
+      .catch(() => {});
+  }, []);
   useEffect(() => {
     loadTraining().then(setTraining).catch(() => setTraining(null));
   }, []);
@@ -317,6 +325,7 @@ export default function AiCreate({ kinds, onImport, onBack }) {
     setError("");
     try {
       onImport(extractJson(reply));
+      if (lastBlock) setPreference("nextBlockContext", null); // used up by this new plan
     } catch (err) {
       setError(err.message);
     }
@@ -450,7 +459,7 @@ export default function AiCreate({ kinds, onImport, onBack }) {
         {needsAbout ? (
           <p className="mt-2 text-xs text-neutral-500">Fill in <b>About you</b> above, then copy the prompt.</p>
         ) : (
-          <AiLinks prompt={buildPrompt(kind, profile, answers, extra, others, training)} onCopied={() => setCopied(true)} />
+          <AiLinks prompt={buildPrompt(kind, profile, answers, extra, others, training, lastBlock)} onCopied={() => setCopied(true)} />
         )}
       </div>
 
