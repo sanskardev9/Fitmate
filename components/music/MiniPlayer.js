@@ -58,6 +58,7 @@ export default function MiniPlayer() {
         state: info.playerState ?? n?.state,
         time: info.currentTime ?? n?.time ?? 0,
         duration: info.duration || n?.duration || 0,
+        volume: info.volume ?? n?.volume,
       }));
     };
     window.addEventListener("message", onMessage);
@@ -118,6 +119,30 @@ export default function MiniPlayer() {
     const sameSong = !now.id || now.id === track.id;
     savePosition({ id: now.id || track.id, title: now.title || track.title, channel: now.author || track.channel, time: now.time, radio: radio || !sameSong });
   }, [now, track, radio]);
+  // Rest is over: dip the music so the alert is heard, then bring it back.
+  const volumeRef = useRef(100);
+  const ducking = useRef(false); // while dipped, the low volume isn't their real volume
+  if (now?.volume != null && !ducking.current) volumeRef.current = now.volume;
+  useEffect(() => {
+    let timer;
+    const send = (func, args = []) => frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args }), "*");
+    const onDuck = (e) => {
+      if (!playingRef.current) return;
+      clearTimeout(timer);
+      const back = volumeRef.current || 100;
+      ducking.current = true;
+      send("setVolume", [Math.min(15, back)]);
+      timer = setTimeout(() => {
+        send("setVolume", [back]);
+        setTimeout(() => (ducking.current = false), 1500);
+      }, Number(e.detail) || 3500);
+    };
+    window.addEventListener("fitmate:music-duck", onDuck);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("fitmate:music-duck", onDuck);
+    };
+  }, []);
   // While playing, pages get extra room at the bottom so the player never hides content.
   useEffect(() => {
     document.documentElement.classList.toggle("music-on", Boolean(track) && !small);
