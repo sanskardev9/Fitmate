@@ -206,7 +206,7 @@ export default function AiCreate({ kinds, onImport, onBack }) {
   const { user } = useAuth();
   const [profile, setProfile] = useState(() => (user ? cachedProfile(user.id) : null));
   const needsAbout = missingAbout(profile).length > 0;
-  const [about, setAbout] = useState(() => aboutFromProfile(user ? cachedProfile(user.id) : null));
+  const [about, setAbout] = useState(() => aboutFromProfile(user ? cachedProfile(user.id) : null, { draft: true }));
   const [aboutError, setAboutError] = useState("");
 
   // Save missing basics to the profile (targets worked out from them) before building the prompt.

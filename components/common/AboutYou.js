@@ -21,6 +21,27 @@ const GOALS = [
   ["maintain", "Maintain my progress", "Keep your current weight and fitness", ChartNoAxesColumn],
 ];
 
+// Unsaved answers survive a refresh (or pull-to-refresh): kept on the device until "Continue".
+const DRAFT_KEY = "fitmate:aboutDraft";
+function readDraft() {
+  try {
+    return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null");
+  } catch {
+    return null;
+  }
+}
+function writeDraft(v) {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(v));
+  } catch {}
+}
+export function clearAboutDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {}
+}
+const filled = (v) => v !== "" && v != null && !(Array.isArray(v) && !v.length);
+
 const ageOf = (dob) => (dob ? String(Math.floor((Date.now() - new Date(dob)) / 31_557_600_000)) : "");
 export const dobFromAge = (age) => (Number(age) >= 10 && Number(age) <= 100 ? `${new Date().getFullYear() - Number(age)}-01-01` : null);
 
@@ -102,7 +123,11 @@ function Targets({ t }) {
 
 // value: { gender, age, height_cm, weight_kg, target_weight_kg, goal, goal_note }
 export default function AboutYou({ value, onChange, error }) {
-  const set = (k, v) => onChange({ ...value, [k]: v });
+  const set = (k, v) => {
+    const next = { ...value, [k]: v };
+    writeDraft(next);
+    onChange(next);
+  };
   const [showOwn, setShowOwn] = useState(false);
   const dob = dobFromAge(value.age);
   const t =
@@ -198,7 +223,17 @@ export default function AboutYou({ value, onChange, error }) {
   );
 }
 
-export const aboutFromProfile = (p) => ({
+// { draft: true } lays unsaved answers from this device over the profile (client only).
+export const aboutFromProfile = (p, { draft = false } = {}) => {
+  const base = aboutBase(p);
+  const d = draft && typeof window !== "undefined" ? readDraft() : null;
+  if (!d) return base;
+  const out = { ...base };
+  for (const [k, v] of Object.entries(d)) if (k in base && filled(v)) out[k] = v;
+  return out;
+};
+
+const aboutBase = (p) => ({
   gender: p?.gender ?? "",
   age: ageOf(p?.date_of_birth),
   height_cm: p?.height_cm ?? "",
@@ -235,6 +270,7 @@ export async function saveAbout({ userId, name, about, trainingDays }) {
     const { setPreference } = await import("@/lib/services/preferencesService");
     if (t.carbs_g != null) await setPreference("carbsTargetG", t.carbs_g);
     if (t.fat_g != null) await setPreference("fatTargetG", t.fat_g);
+    clearAboutDraft();
     return { profile };
   } catch (err) {
     return { error: err.message?.includes("check constraint") ? "One of those numbers looks out of range." : "Couldn't save your details. Try again." };

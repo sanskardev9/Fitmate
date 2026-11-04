@@ -18,6 +18,9 @@ const GOAL_LABEL = { lose_fat: "Lose fat", recomposition: "Build muscle & lose f
 export async function signOutToWebsite(signOut) {
   sessionStorage.setItem("fitmate:signed-out", "1");
   try {
+    localStorage.removeItem("fitmate:aboutDraft"); // unsaved "About you" answers stay with this person
+  } catch {}
+  try {
     await signOut();
   } finally {
     window.location.replace("/");

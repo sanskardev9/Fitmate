@@ -27,12 +27,12 @@ export default function Onboarding() {
     if (!user) return;
     const local = cachedProfile(user.id);
     setProfile(local);
-    setAbout(aboutFromProfile(local));
+    setAbout(aboutFromProfile(local, { draft: true }));
     fetchProfile(user.id)
       .then((p) => {
         if (!p) return;
         setProfile(p);
-        setAbout(aboutFromProfile(p));
+        setAbout(aboutFromProfile(p, { draft: true }));
       })
       .catch(() => {});
   }, [user]);
