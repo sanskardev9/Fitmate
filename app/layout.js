@@ -9,7 +9,8 @@ export const metadata = {
   title: { default: "FitMate", template: "%s · FitMate" },
   description: "Your Fitness. Your Nutrition. Your Progress.",
   appleWebApp: { capable: true, title: "FitMate", statusBarStyle: "default" },
-  icons: { icon: "/icons/icon.svg", apple: "/icons/icon.svg" },
+  // iPhone Home Screen needs a PNG (it ignores SVG).
+  icons: { icon: "/icons/icon.svg", apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport = {
@@ -28,7 +29,7 @@ export default function RootLayout({ children }) {
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var c=localStorage.getItem("fitmate:theme")||"system";var d=c==="dark"||(c==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);document.documentElement.style.colorScheme=d?"dark":"light";}catch(e){}})();`,
+            __html: `(function(){try{var c=localStorage.getItem("fitmate:theme")||"system";var d=c==="dark"||(c==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);document.documentElement.style.colorScheme=d?"dark":"light";var m=matchMedia("(prefers-color-scheme: dark)");m.addEventListener("change",function(e){if((localStorage.getItem("fitmate:theme")||"system")!=="system")return;document.documentElement.classList.toggle("dark",e.matches);document.documentElement.style.colorScheme=e.matches?"dark":"light";window.dispatchEvent(new Event("fitmate:theme"));});}catch(e){}})();`,
           }}
         />
       </head>

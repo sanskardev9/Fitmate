@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { X, ChevronLeft, ChevronRight, CircleCheck, Trophy } from "lucide-react";
-import { loadStreak, monthStatuses } from "@/lib/services/streak";
+import { X, ChevronLeft, ChevronRight, CircleCheck, Trophy, Snowflake } from "lucide-react";
+import { loadStreak, monthStatuses, MAX_FREEZES, FREEZE_EVERY } from "@/lib/services/streak";
 import { Flame } from "./HomeToday";
 
 const DOW = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -16,7 +16,8 @@ export default function StreakScreen() {
   const now = new Date();
   const [ym, setYm] = useState([now.getFullYear(), now.getMonth()]);
   const streak = useLiveQuery(() => loadStreak(), []);
-  const month = useLiveQuery(() => monthStatuses(ym[0], ym[1]), [ym[0], ym[1]]);
+  const frozenSig = streak?.frozenKeys.join(",") ?? "";
+  const month = useLiveQuery(() => monthStatuses(ym[0], ym[1], frozenSig ? frozenSig.split(",") : []), [ym[0], ym[1], frozenSig]);
 
   const isCurrentMonth = ym[0] === now.getFullYear() && ym[1] === now.getMonth();
   const shift = (n) => setYm(([y, m]) => {
@@ -32,13 +33,14 @@ export default function StreakScreen() {
       : streak.today.status === "rest"
         ? "Rest day. Your streak is safe."
         : streak.current > 0
-          ? `Follow today's plan to make it ${streak.current + 1}.`
+          ? `Follow today's plan before midnight to make it ${streak.current + 1}.`
           : "Follow today's plan to start a streak.";
 
   const lead = month ? (month[0].date.getDay() + 6) % 7 : 0;
   const cells = month ? [...Array(lead).fill(null), ...month] : [];
   const followed = month?.filter((d) => d.status === "done").length ?? 0;
   const missed = month?.filter((d) => d.status === "missed").length ?? 0;
+  const frozenCount = month?.filter((d) => d.status === "frozen").length ?? 0;
 
   return (
     <div className="min-h-dvh bg-[var(--background)] pb-10">
@@ -61,6 +63,8 @@ export default function StreakScreen() {
           </div>
           <p className={`mt-5 rounded-2xl px-4 py-3 text-sm font-medium ${lit ? "bg-black/15" : "bg-white dark:bg-neutral-800"}`}>{message}</p>
         </section>
+
+        {streak && <Freezes streak={streak} />}
 
         <section className="mt-6">
           <div className="flex items-center justify-between">
@@ -92,14 +96,16 @@ export default function StreakScreen() {
               {cells.map((d, i) => {
                 if (!d) return <span key={`e${i}`} />;
                 const col = i % 7;
-                const done = d.status === "done";
-                const prevDone = col > 0 && cells[i - 1]?.status === "done";
-                const nextDone = col < 6 && cells[i + 1]?.status === "done";
+                const kept = (x) => x?.status === "done" || x?.status === "frozen";
+                const done = kept(d);
+                const prevDone = col > 0 && kept(cells[i - 1]);
+                const nextDone = col < 6 && kept(cells[i + 1]);
+                const frozen = d.status === "frozen";
                 return (
                   <div key={d.key} className="relative flex h-11 items-center justify-center" title={`${d.date.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}: ${LABEL[d.status]}`}>
                     {done && (
                       <span
-                        className={`absolute inset-y-0 bg-gradient-to-r from-orange-500 to-amber-400 ${!prevDone && !nextDone ? "left-1/2 w-11 -translate-x-1/2 rounded-full" : `${prevDone ? "left-0" : "left-1 rounded-l-full"} ${nextDone ? "right-0" : "right-1 rounded-r-full"}`}`}
+                        className={`absolute inset-y-0 bg-gradient-to-r ${frozen ? "from-sky-400 to-sky-300" : "from-orange-500 to-amber-400"} ${!prevDone && !nextDone ? "left-1/2 w-11 -translate-x-1/2 rounded-full" : `${prevDone ? "left-0" : "left-1 rounded-l-full"} ${nextDone ? "right-0" : "right-1 rounded-r-full"}`}`}
                       />
                     )}
                     <span
@@ -107,7 +113,7 @@ export default function StreakScreen() {
                         done ? "text-white" : d.isToday ? "bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900" : d.status === "missed" ? "text-rose-400" : d.status === "future" ? "text-neutral-400 dark:text-neutral-600" : "text-neutral-600 dark:text-neutral-400"
                       }`}
                     >
-                      {d.date.getDate()}
+                      {frozen ? <Snowflake className="h-4 w-4" /> : d.date.getDate()}
                     </span>
                   </div>
                 );
@@ -121,6 +127,9 @@ export default function StreakScreen() {
             <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-rose-400" /> Missed{missed ? ` · ${missed} this month` : ""}
             </span>
+            <span className="flex items-center gap-1.5">
+              <Snowflake className="h-3 w-3 text-sky-500" /> Freeze used{frozenCount ? ` · ${frozenCount}` : ""}
+            </span>
             <span>Rest days never break a streak</span>
           </p>
         </section>
@@ -129,7 +138,40 @@ export default function StreakScreen() {
   );
 }
 
-const LABEL = { done: "followed", missed: "missed", rest: "rest day", pending: "today, not done yet", future: "upcoming" };
+const LABEL = { done: "followed", missed: "missed", frozen: "saved by a streak freeze", rest: "rest day", pending: "today, not done yet", future: "upcoming" };
+
+// Freezes you hold (max 2), how they work, and progress to the next one.
+function Freezes({ streak }) {
+  const { freezes, nextFreezeIn } = streak;
+  const progress = nextFreezeIn == null ? FREEZE_EVERY : FREEZE_EVERY - nextFreezeIn;
+  return (
+    <section className="animate-fade-up mt-4 rounded-3xl border border-sky-500/25 bg-sky-500/5 p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="font-bold">Streak freezes</h2>
+          <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">If you miss a planned day, a freeze is used automatically and your streak survives.</p>
+        </div>
+        <div className="flex shrink-0 gap-1.5">
+          {Array.from({ length: MAX_FREEZES }, (_, i) => (
+            <span key={i} className={`flex h-11 w-11 items-center justify-center rounded-2xl ${i < freezes ? "bg-gradient-to-b from-sky-300 to-sky-500 text-white shadow-md shadow-sky-500/30" : "border-2 border-dashed border-sky-500/30 text-sky-500/40"}`}>
+              <Snowflake className="h-5 w-5" />
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="mt-4">
+        <div className="flex justify-between text-xs font-medium text-neutral-500">
+          <span>{nextFreezeIn == null ? `You're holding the most (${MAX_FREEZES})` : `Next freeze in ${nextFreezeIn} day${nextFreezeIn === 1 ? "" : "s"}`}</span>
+          <span className="tabular-nums">{progress}/{FREEZE_EVERY}</span>
+        </div>
+        <div className="mt-1.5 h-2 rounded-full bg-sky-500/15">
+          <div className="h-2 rounded-full bg-sky-500 transition-[width] duration-700" style={{ width: `${(progress / FREEZE_EVERY) * 100}%` }} />
+        </div>
+        <p className="mt-2 text-xs text-neutral-500">Earn 1 freeze for every {FREEZE_EVERY} days in a row you follow your plan. You can hold {MAX_FREEZES}.</p>
+      </div>
+    </section>
+  );
+}
 
 function Stat({ Icon, tint, value, label }) {
   return (

@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
 
-// Light / Dark only. First visit starts from the device setting; after that the user's choice is
-// remembered on this device. Switching wipes the new theme across the screen (View Transitions).
+// Light / Dark. Until the user picks one, FitMate follows the device setting (live); after that the
+// choice is remembered on this device. Switching wipes the new theme across the screen (View Transitions).
 const KEY = "fitmate:theme";
 
 const isDarkNow = () => document.documentElement.classList.contains("dark");
@@ -16,7 +16,12 @@ function setDark(dark) {
 
 export default function ThemeToggle({ className = "" }) {
   const [dark, setDarkState] = useState(false);
-  useEffect(() => setDarkState(isDarkNow()), []);
+  useEffect(() => {
+    const sync = () => setDarkState(isDarkNow());
+    sync();
+    window.addEventListener("fitmate:theme", sync);
+    return () => window.removeEventListener("fitmate:theme", sync);
+  }, []);
 
   function toggle() {
     const next = !isDarkNow();

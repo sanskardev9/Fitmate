@@ -13,6 +13,7 @@ import EndWorkoutButton from "./EndWorkoutButton";
 import { useState } from "react";
 import { ChevronDown, Dumbbell } from "lucide-react";
 import { loadDaily } from "@/lib/services/insights";
+import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
 import { WorkoutOutcome } from "@/components/tracker/DailyTracker";
 
 async function load() {
@@ -138,6 +139,8 @@ export default function WorkoutHome() {
 }
 
 function Empty() {
+  const ready = useServerReady();
+  if (!ready) return <LoadingPlans />;
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
       <h2 className="text-lg font-semibold">No workout plan yet</h2>

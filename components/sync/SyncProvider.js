@@ -48,3 +48,16 @@ export default function SyncProvider({ children }) {
 }
 
 export const useSyncState = () => useSyncExternalStore(subscribeSync, getSyncState, getSyncState);
+
+// True once the server has answered since the app opened (or offline / local-only mode).
+export const useServerReady = () => useSyncState().ready;
+
+// Shown instead of a "no plan yet" screen until the server has answered.
+export function LoadingPlans() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-3xl border border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
+      <span className="h-8 w-8 animate-spin rounded-full border-[3px] border-emerald-500/25 border-t-emerald-600" />
+      <p className="text-sm font-medium">Loading your plans…</p>
+    </div>
+  );
+}

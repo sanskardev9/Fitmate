@@ -2,20 +2,34 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LogoMark } from "@/components/common/Logo";
 import { Backdrop, Arrow } from "@/components/dashboard/Welcome";
 import Reveal, { useInView } from "./Reveal";
 import { FileText, CircleHelp, Gauge, CircleOff, Check, Timer, Repeat2, Flame } from "lucide-react";
 import ThemeToggle from "@/components/common/ThemeToggle";
+import { supabase } from "@/lib/supabase/client";
 
 // One message: getting a plan is easy, staying consistent is hard. FitMate makes every day easy
 // to follow. Sections: what we do -> the problem -> how we fix it -> why it matters -> start.
 
 
 export default function Landing() {
-  const { user } = useAuth();
+  const { user, loading, enabled } = useAuth();
+  const router = useRouter();
   const signedIn = Boolean(user);
+  useEffect(() => {
+    if (user) router.replace("/home");
+  }, [user, router]);
+  // While the session is checked (or we're redirecting), show the logo instead of the page.
+  if (enabled && (loading || user)) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center">
+        <LogoMark className="h-12 w-12 animate-pulse" />
+      </div>
+    );
+  }
   return (
     <div className="relative overflow-x-clip">
       <ScrollProgress />
@@ -23,7 +37,9 @@ export default function Landing() {
       <Hero signedIn={signedIn} />
       <Problem />
       <How />
+      <InsideApp />
       <Matters />
+      <Reviews />
       <FinalCta signedIn={signedIn} />
       <footer className="border-t border-neutral-200 px-6 py-8 text-center text-sm text-neutral-500 dark:border-neutral-800">
         <div className="mb-2 flex items-center justify-center gap-2">
@@ -123,7 +139,7 @@ function PrimaryCta({ signedIn, children, className = "" }) {
 
 function Hero({ signedIn }) {
   return (
-    <section id="top" className="relative isolate flex min-h-[100svh] flex-col justify-center px-5 pt-24 pb-12">
+    <section id="top" className="relative isolate flex min-h-[100svh] flex-col justify-center px-5 pt-24 pb-12 lg:min-h-0 lg:justify-start lg:pt-32 lg:pb-24">
       <Backdrop />
       <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1fr_1fr]">
         <div className="min-w-0 text-center lg:text-left">
@@ -135,11 +151,20 @@ function Hero({ signedIn }) {
           <p className="animate-fade-up mx-auto mt-5 max-w-md text-lg text-neutral-600 [animation-delay:200ms] lg:mx-0 dark:text-neutral-400">
             Most of us start strong, then quietly slip. FitMate exists to make sticking to your workout and diet feel easy.
           </p>
-          {/* No sign-up push here: invite them to read the story first. */}
-          <a href="#problem" className="group animate-fade-up mt-8 inline-flex items-center gap-2 font-semibold text-emerald-700 [animation-delay:300ms] dark:text-emerald-400">
-            Why it&apos;s hard
-            <span className="inline-block transition-transform group-hover:translate-y-0.5 motion-safe:animate-bounce">↓</span>
-          </a>
+          <p className="animate-fade-up mx-auto mt-4 max-w-md font-medium text-neutral-800 [animation-delay:250ms] lg:mx-0 dark:text-neutral-200">
+            Your workouts, meals, rest timers and progress, all in one daily checklist.
+          </p>
+          {/* Quiet actions: read the story, or start if you're ready. */}
+          <div className="animate-fade-up mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 [animation-delay:300ms] lg:justify-start">
+            <Link href={signedIn ? "/home" : "/login?mode=signup"} className="group inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
+              Make my plan
+              <span className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
+            </Link>
+            <a href="#problem" className="group inline-flex items-center gap-1.5 font-semibold text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white">
+              Why it&apos;s hard
+              <span className="inline-block transition-transform group-hover:translate-y-0.5 motion-safe:animate-bounce">↓</span>
+            </a>
+          </div>
         </div>
         <TodayPhone />
       </div>
@@ -207,7 +232,6 @@ function Problem() {
             );
           })}
         </ol>
-        <p className="mt-3 pl-[3.75rem] text-xs text-neutral-500 sm:pl-[4.5rem]">% = how much of the plan still gets followed</p>
       </div>
     </section>
   );
@@ -528,5 +552,187 @@ function TodayPhone() {
         <p className={`mt-4 text-center text-sm font-semibold transition-opacity duration-500 ${all ? "text-emerald-600 opacity-100" : "opacity-0"}`}>Day done. Streak +1 🔥</p>
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------- inside the app
+
+function Phone({ children }) {
+  return (
+    <div className="mx-auto w-full max-w-[17rem] rounded-[2rem] border border-neutral-200 bg-white p-3 text-left shadow-xl shadow-emerald-900/5 dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-neutral-200 dark:bg-neutral-700" />
+      {children}
+    </div>
+  );
+}
+
+function ShotSession() {
+  const rows = [
+    ["1", "8", true],
+    ["2", "8", true],
+    ["3", "7", false],
+    ["4", "8", false],
+  ];
+  return (
+    <Phone>
+      <div className="flex items-center justify-between px-1">
+        <span className="text-xs font-semibold">Pull Day</span>
+        <span className="text-[10px] text-neutral-500 tabular-nums">24:10 · 9/16 sets</span>
+      </div>
+      <div className="mt-1.5 h-1 rounded-full bg-neutral-100 dark:bg-neutral-800">
+        <div className="h-full w-[56%] rounded-full bg-emerald-500" />
+      </div>
+      <div className="mt-3 rounded-2xl border border-neutral-200 p-3 dark:border-neutral-800">
+        <p className="text-sm font-semibold">Pull-ups</p>
+        <p className="text-[10px] text-neutral-500">4 × 8 reps · rest 2:00</p>
+        <div className="mt-2 space-y-1.5">
+          {rows.map(([n, reps, done], i) => (
+            <div key={n} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${done ? "bg-emerald-500/10" : i === 2 ? "ring-1 ring-emerald-500/50" : ""}`}>
+              <span className="w-3 text-[11px] font-semibold text-neutral-500">{n}</span>
+              <span className="flex-1 rounded-md bg-neutral-100 py-1 text-center text-xs font-semibold tabular-nums dark:bg-neutral-800">{reps}</span>
+              <span className={`flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold ${done ? "bg-emerald-500 text-white" : i === 2 ? "bg-emerald-600 text-white" : "bg-neutral-100 text-neutral-400 dark:bg-neutral-800"}`}>✓</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mt-3 rounded-xl bg-emerald-600 py-2.5 text-center text-sm font-semibold text-white">✓ Log 7 reps</div>
+    </Phone>
+  );
+}
+
+function ShotSwap() {
+  return (
+    <Phone>
+      <p className="px-1 text-[10px] font-semibold tracking-wide text-emerald-600 uppercase">Swap breakfast</p>
+      <p className="px-1 text-sm font-semibold">Masala oats with soya</p>
+      <p className="px-1 text-[10px] text-neutral-500">36 g protein · 520 kcal</p>
+      <div className="mt-2.5 flex gap-1.5 overflow-hidden px-1">
+        {["All 18", "Oats 5", "Chilla 4", "Poha 4"].map((c, i) => (
+          <span key={c} className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${i === 2 ? "bg-emerald-600 text-white" : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"}`}>
+            {c}
+          </span>
+        ))}
+      </div>
+      <div className="mt-2.5 space-y-1.5">
+        {[
+          ["Besan paneer chilla", "35 g · 510 kcal"],
+          ["Moong dal chilla", "34 g · 530 kcal"],
+          ["Soya stuffed chilla", "36 g · 520 kcal"],
+        ].map(([n, m]) => (
+          <div key={n} className="flex items-center gap-2 rounded-xl bg-neutral-50 px-2.5 py-2 dark:bg-neutral-950">
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-medium">{n}</span>
+              <span className="block text-[10px] text-neutral-500">{m}</span>
+            </span>
+            <span className="rounded-md bg-emerald-600 px-2 py-1 text-[10px] font-semibold text-white">Choose</span>
+          </div>
+        ))}
+      </div>
+    </Phone>
+  );
+}
+
+function ShotStreak() {
+  const days = Array.from({ length: 28 }, (_, i) => i);
+  return (
+    <Phone>
+      <div className="rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 p-3 text-white">
+        <p className="text-3xl leading-none font-extrabold">12</p>
+        <p className="text-xs font-semibold text-white/90">day streak 🔥</p>
+      </div>
+      <div className="mt-3 grid grid-cols-7 gap-1 px-1">
+        {days.map((d) => {
+          const on = d >= 9 && d <= 20;
+          const missed = d === 5;
+          return (
+            <span
+              key={d}
+              className={`flex aspect-square items-center justify-center rounded-md text-[9px] font-semibold ${on ? "bg-orange-500 text-white" : missed ? "text-rose-400" : "text-neutral-400"}`}
+            >
+              {d + 1}
+            </span>
+          );
+        })}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-1.5">
+        {[
+          ["Protein", "110/115 g"],
+          ["Workouts", "5 this week"],
+        ].map(([k, v]) => (
+          <div key={k} className="rounded-xl bg-neutral-50 px-2.5 py-2 dark:bg-neutral-950">
+            <p className="text-[10px] text-neutral-500">{k}</p>
+            <p className="text-xs font-semibold">{v}</p>
+          </div>
+        ))}
+      </div>
+    </Phone>
+  );
+}
+
+function InsideApp() {
+  const shots = [
+    [<ShotSession key="a" />, "Log a set in one tap", "The next set is always highlighted. Rest timer starts by itself."],
+    [<ShotSwap key="b" />, "Swap a meal, stay on target", "Don't feel like it? Pick another dish with the same protein."],
+    [<ShotStreak key="c" />, "Watch it add up", "Streak, calendar and targets show you're on track."],
+  ];
+  return (
+    <section id="inside" className="flex min-h-[100svh] flex-col justify-center px-5 py-20">
+      <div className="mx-auto w-full max-w-6xl">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold tracking-wider text-emerald-600 uppercase">Inside the app</p>
+          <h2 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Built for the moment you need it.</h2>
+        </Reveal>
+        <div className="mt-14 grid gap-10 md:grid-cols-3 md:gap-6">
+          {shots.map(([shot, title, text], i) => (
+            <Reveal key={title} delay={i * 140} className="flex min-w-0 flex-col text-center">
+              <div className="flex flex-1 items-center">{shot}</div>
+              <h3 className="mt-6 text-lg font-semibold">{title}</h3>
+              <p className="mx-auto mt-1 max-w-xs text-sm text-neutral-500">{text}</p>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------- reviews (admin-approved)
+
+function Reviews() {
+  const [reviews, setReviews] = useState([]);
+  useEffect(() => {
+    if (!supabase) return;
+    supabase
+      .from("public_reviews")
+      .select("id, name, rating, message")
+      .order("created_at", { ascending: false })
+      .limit(6)
+      .then(({ data }) => setReviews(data ?? []));
+  }, []);
+  if (!reviews.length) return null;
+  const avg = (reviews.reduce((n, r) => n + r.rating, 0) / reviews.length).toFixed(1);
+  return (
+    <section className="px-5 py-24">
+      <div className="mx-auto max-w-6xl">
+        <Reveal className="text-center">
+          <p className="text-sm font-semibold tracking-wider text-emerald-600 uppercase">What people say</p>
+          <h2 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Real people, staying on track.</h2>
+          <p className="mt-3 text-neutral-500">
+            <span className="text-amber-500">★</span> {avg} average from people using FitMate
+          </p>
+        </Reveal>
+        <div className="mt-12 grid gap-4 md:grid-cols-3">
+          {reviews.map((r, i) => (
+            <Reveal key={r.id} delay={i * 100} className="min-w-0">
+              <figure className="h-full rounded-3xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
+                <div className="text-amber-400">{"★".repeat(r.rating)}<span className="text-neutral-300 dark:text-neutral-700">{"★".repeat(5 - r.rating)}</span></div>
+                <blockquote className="mt-3 leading-relaxed text-neutral-700 dark:text-neutral-300">&ldquo;{r.message}&rdquo;</blockquote>
+                <figcaption className="mt-4 text-sm font-semibold">{r.name}</figcaption>
+              </figure>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

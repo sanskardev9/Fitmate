@@ -211,18 +211,19 @@ input:-webkit-autofill:focus {
   mix-blend-mode: normal;
 }
 :root[data-theme-wipe="to-dark"]::view-transition-new(root) {
-  animation: theme-wipe-right 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+  animation: theme-wipe-down 0.9s cubic-bezier(0.65, 0, 0.35, 1);
 }
 :root[data-theme-wipe="to-light"]::view-transition-new(root) {
-  animation: theme-wipe-left 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+  animation: theme-wipe-up 0.9s cubic-bezier(0.65, 0, 0.35, 1);
 }
-@keyframes theme-wipe-right {
-  from { clip-path: inset(0 100% 0 0); }
-  to { clip-path: inset(0 0 0 0); }
+/* A slanted edge sweeps diagonally: top-left -> bottom-right into dark, back the other way into light. */
+@keyframes theme-wipe-down {
+  from { clip-path: polygon(0 0, 0 0, -40% 100%, -40% 100%); }
+  to { clip-path: polygon(0 0, 140% 0, 100% 100%, -40% 100%); }
 }
-@keyframes theme-wipe-left {
-  from { clip-path: inset(0 0 0 100%); }
-  to { clip-path: inset(0 0 0 0); }
+@keyframes theme-wipe-up {
+  from { clip-path: polygon(140% 0, 140% 0, 100% 100%, 100% 100%); }
+  to { clip-path: polygon(0 0, 140% 0, 100% 100%, -40% 100%); }
 }
 
 /* Anchor links (Why, How it works, logo) glide instead of jumping; stop below the fixed header. */

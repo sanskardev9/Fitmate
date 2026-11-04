@@ -1,21 +1,66 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { Share } from "lucide-react";
 import { copyText } from "./PlanImport";
 
-// Open the prompt in an AI chat. Official https links: on phones they open the installed app
-// (iOS universal links / Android app links), otherwise the website. The prompt is copied first;
-// ChatGPT and Claude websites also receive it pre-filled.
+// Getting the prompt into an AI chat.
+// Phones: the share sheet is the only reliable way to open the installed ChatGPT / Claude / Gemini
+// app (web links usually open the website, especially from an installed web app like FitMate).
+// Everywhere: website links as well. The prompt is always copied first, so pasting works too.
+// Long prompts (e.g. a whole uploaded plan) don't fit in a link; those open the chat empty.
+const MAX_URL_PROMPT = 6000;
+const fits = (p) => encodeURIComponent(p).length <= MAX_URL_PROMPT;
 const AIS = [
-  { name: "ChatGPT", domain: "chatgpt.com", url: (p) => `https://chatgpt.com/?q=${encodeURIComponent(p)}` },
-  { name: "Claude", domain: "claude.ai", url: (p) => `https://claude.ai/new?q=${encodeURIComponent(p)}` },
+  { name: "ChatGPT", domain: "chatgpt.com", url: (p) => (fits(p) ? `https://chatgpt.com/?q=${encodeURIComponent(p)}` : "https://chatgpt.com/") },
+  { name: "Claude", domain: "claude.ai", url: (p) => (fits(p) ? `https://claude.ai/new?q=${encodeURIComponent(p)}` : "https://claude.ai/new") },
   { name: "Gemini", domain: "gemini.google.com", url: () => "https://gemini.google.com/app" },
-  { name: "Perplexity", domain: "perplexity.ai", url: (p) => `https://www.perplexity.ai/search?q=${encodeURIComponent(p)}` },
+  { name: "Perplexity", domain: "perplexity.ai", url: (p) => (fits(p) ? `https://www.perplexity.ai/search?q=${encodeURIComponent(p)}` : "https://www.perplexity.ai/") },
 ];
+const icon = (domain) => `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
 export default function AiLinks({ prompt, onCopied }) {
+  const [canShare, setCanShare] = useState(false);
+  const [shareNote, setShareNote] = useState("");
+  useEffect(() => {
+    setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches);
+  }, []);
+
+  async function shareToApp() {
+    setShareNote("");
+    if (await copyText(prompt)) onCopied?.();
+    try {
+      await navigator.share({ text: prompt });
+    } catch (e) {
+      // Closed the sheet: nothing to do. Anything else: the prompt is copied, so pasting works.
+      if (e?.name !== "AbortError") setShareNote("Couldn't open the share sheet. The prompt is copied: open your AI app and paste it.");
+    }
+  }
+
   return (
     <div className="mt-3">
-      <p className="mb-2 text-xs text-neutral-500">Or open it straight in:</p>
+      {canShare && (
+        <>
+          <button type="button" onClick={shareToApp} className="flex w-full items-center gap-3 rounded-xl border border-neutral-200 p-3 text-left transition-colors active:scale-[0.99] active:bg-neutral-50 dark:border-neutral-800 dark:active:bg-neutral-800">
+            <span className="flex shrink-0 -space-x-2">
+              {AIS.slice(0, 3).map((ai) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={ai.name} src={icon(ai.domain)} alt="" width={28} height={28} className="h-7 w-7 rounded-lg bg-white ring-2 ring-white dark:ring-neutral-900" />
+              ))}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">Open in your AI app</span>
+              <span className="block text-xs text-neutral-500">Then pick ChatGPT, Claude or Gemini</span>
+            </span>
+            <Share className="h-5 w-5 shrink-0 text-neutral-400" />
+          </button>
+          {shareNote && <p className="mt-2 text-xs text-rose-600">{shareNote}</p>}
+        </>
+      )}
+
+      <p className="mt-3 mb-2 text-xs text-neutral-500">
+        {canShare ? "Or use the website:" : fits(prompt) ? "Or open it straight in:" : "Or open a chat (the prompt is copied, just paste it):"}
+      </p>
       <div className="grid grid-cols-4 gap-2">
         {AIS.map((ai) => (
           <a
@@ -27,7 +72,7 @@ export default function AiLinks({ prompt, onCopied }) {
             className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-200 py-2.5 text-[11px] font-medium text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50 active:scale-95 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-800"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`https://www.google.com/s2/favicons?domain=${ai.domain}&sz=64`} alt="" width={28} height={28} className="h-7 w-7 rounded-lg" loading="lazy" />
+            <img src={icon(ai.domain)} alt="" width={28} height={28} className="h-7 w-7 rounded-lg" loading="lazy" />
             {ai.name}
           </a>
         ))}

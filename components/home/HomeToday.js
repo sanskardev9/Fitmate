@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Utensils, Play, Square, ChevronRight, Upload, Trophy, CalendarDays, Check, X } from "lucide-react";
+import { Utensils, Play, Square, ChevronRight, Upload, Trophy, CalendarDays, Check, X, Snowflake } from "lucide-react";
 import { loadDaily } from "@/lib/services/insights";
 import { getPreferences, setPreference } from "@/lib/services/preferencesService";
 import { loadStreak } from "@/lib/services/streak";
@@ -13,6 +13,8 @@ import { useAuth, displayName } from "@/components/auth/AuthProvider";
 import { useConfirm } from "@/components/common/ConfirmDialog";
 import FinishedActions from "@/components/workout/FinishedActions";
 import { Nutrition } from "@/components/tracker/DailyTracker";
+import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
+import NotifyNudge from "./NotifyNudge";
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -69,6 +71,7 @@ export default function HomeToday() {
       <NextUp daily={daily} onEnd={endWorkout} />
       {daily.prefs.activeDietPlanId ? <Nutrition data={daily} /> : <AddDiet />}
       <StreakCard streak={streak} />
+      <NotifyNudge streak={streak.current} />
 
       {celebrate && <Celebration count={streak.current} onClose={() => setCelebrate(false)} />}
     </div>
@@ -102,7 +105,7 @@ function StreakPill({ count, lit }) {
 }
 
 function StreakCard({ streak }) {
-  const { current, best, week, today } = streak;
+  const { current, best, week, today, freezes, recentFreeze } = streak;
   const lit = current > 0 || today.status === "done";
   const message =
     today.status === "done"
@@ -110,7 +113,7 @@ function StreakCard({ streak }) {
       : today.status === "rest"
         ? "Rest day. Your streak is safe."
         : current > 0
-          ? "Follow today's plan to keep your streak alive."
+          ? "Follow today's plan before midnight to keep it."
           : "Follow today's plan to start a streak.";
 
   return (
@@ -125,7 +128,13 @@ function StreakCard({ streak }) {
           <p className="mt-1 font-semibold text-orange-600 dark:text-orange-400">day streak</p>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{message}</p>
         </div>
+        <FreezeBadge count={freezes} className="absolute top-0 right-0" />
       </div>
+      {recentFreeze && (
+        <p className="relative mt-4 flex items-center gap-2 rounded-2xl bg-sky-500/10 px-3 py-2 text-sm text-sky-800 dark:text-sky-200">
+          <Snowflake className="h-4 w-4 shrink-0" /> A streak freeze saved your streak on {recentFreeze.date.toLocaleDateString(undefined, { weekday: "long" })}.
+        </p>
+      )}
 
       <div className="relative mt-6 grid grid-cols-7 gap-2">
         {week.map((d, i) => (
@@ -145,8 +154,23 @@ function StreakCard({ streak }) {
   );
 }
 
+// Streak freezes you're holding (max 2), shown as ice cubes.
+export function FreezeBadge({ count, className = "" }) {
+  return (
+    <span title={`${count} streak freeze${count === 1 ? "" : "s"}`} className={`flex items-center gap-1 rounded-full bg-sky-500/10 px-2 py-1 text-xs font-bold text-sky-700 tabular-nums ring-1 ring-sky-500/25 dark:text-sky-300 ${className}`}>
+      <Snowflake className="h-3.5 w-3.5" /> {count}
+    </span>
+  );
+}
+
 function DayBubble({ status, isToday, delay }) {
   const base = "flex h-10 w-10 items-center justify-center rounded-full sm:h-11 sm:w-11";
+  if (status === "frozen")
+    return (
+      <span title="Saved by a streak freeze" className={`${base} bg-gradient-to-b from-sky-300 to-sky-500 text-white shadow-md shadow-sky-500/30`}>
+        <Snowflake className="h-5 w-5" />
+      </span>
+    );
   if (status === "done")
     return (
       <span className={`${base} animate-pop bg-gradient-to-b from-amber-400 to-orange-500 text-white shadow-md shadow-orange-500/30`} style={{ animationDelay: `${delay}ms` }}>
@@ -173,6 +197,7 @@ function DayBubble({ status, isToday, delay }) {
 // ---------------------------------------------------------------- next up
 
 function NextUp({ daily, onEnd }) {
+  const ready = useServerReady();
   const { today, active, finished, workoutMinutes } = daily;
 
   if (active) {
@@ -265,17 +290,23 @@ function NextUp({ daily, onEnd }) {
   }
 
   if (!today.day && today.meals.length === 0 && !daily.prefs.activeWorkoutPlanId && !daily.prefs.activeDietPlanId) {
+    if (!ready) return <LoadingPlans />;
     return (
-      <Link href="/plans/import" className="animate-fade-up flex items-center gap-4 rounded-3xl border border-dashed border-neutral-300 p-5 sm:p-6 dark:border-neutral-700">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
-          <Upload className="h-6 w-6" />
+      <section className="animate-fade-up rounded-3xl border border-neutral-200 bg-white p-6 text-center dark:border-neutral-800 dark:bg-neutral-900">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <Upload className="h-7 w-7" />
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-semibold">Bring in your plan</span>
-          <span className="block text-sm text-neutral-500">Drop a PDF or JSON and FitMate sets up your days.</span>
-        </span>
-        <ChevronRight className="h-5 w-5 text-neutral-400" />
-      </Link>
+        <h2 className="mt-4 text-xl font-semibold">Let&apos;s set up your first plan</h2>
+        <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-500">Then this screen shows today&apos;s workout and meals, ready to tick off.</p>
+        <div className="mx-auto mt-5 grid max-w-sm gap-2 sm:grid-cols-2">
+          <Link href="/plans/import?start=create" className="rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white active:bg-emerald-700">
+            Create a plan
+          </Link>
+          <Link href="/plans/import?start=have" className="rounded-xl border border-neutral-300 py-3 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800">
+            Import a plan
+          </Link>
+        </div>
+      </section>
     );
   }
 
@@ -296,6 +327,8 @@ function NextUp({ daily, onEnd }) {
 }
 
 function AddDiet() {
+  const ready = useServerReady();
+  if (!ready) return null;
   return (
     <Link href="/plans/import?kind=diet" className="animate-fade-up flex items-center gap-4 rounded-3xl border border-dashed border-neutral-300 p-5 sm:p-6 dark:border-neutral-700">
       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600">

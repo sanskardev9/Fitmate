@@ -3,15 +3,19 @@ import BottomNav from "@/components/common/BottomNav";
 import Logo from "@/components/common/Logo";
 import AccountButton from "@/components/auth/AccountButton";
 import AuthGate from "@/components/auth/AuthGate";
+import AdminSwitch from "@/components/admin/AdminSwitch";
+import StreakReporter from "@/components/common/StreakReporter";
 
 export default function DashboardLayout({ children }) {
   return (
     <AuthGate>
       <BottomNav />
+      <StreakReporter />
       <div className="md:pl-64">
         <header className="flex items-center justify-between px-4 pt-4 md:hidden">
           <Logo />
           <div className="flex items-center gap-1">
+            <AdminSwitch compact="header" />
             <ThemeToggle />
             <AccountButton variant="header" />
           </div>

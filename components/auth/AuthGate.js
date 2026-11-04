@@ -15,14 +15,17 @@ export default function AuthGate({ children, requireOnboarded = true }) {
   const { user, loading, enabled } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [status, setStatus] = useState("checking");
+  const [status, setStatus] = useState(() =>
+    !enabled || (user && (!requireOnboarded || cachedProfile(user.id)?.onboarded_at)) ? "ok" : "checking",
+  );
 
   useEffect(() => {
     if (!enabled) return setStatus("ok"); // no Supabase configured: local-only mode
     if (loading) return;
     if (!user) {
-      // Signed out (by choice or an expired session): always the website, never the login form.
-      router.replace("/");
+      // Chose "Sign out" -> the website. Session expired / opened a link -> log in, then come back here.
+      if (sessionStorage.getItem("fitmate:signed-out")) router.replace("/");
+      else router.replace(`/login?next=${encodeURIComponent(pathname)}`);
       return;
     }
     sessionStorage.removeItem("fitmate:signed-out");

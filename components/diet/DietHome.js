@@ -10,6 +10,7 @@ import { getMealsForWeekday, getMealLogsForDate, sumNutrition } from "@/lib/serv
 import { todayKey } from "@/lib/utils";
 import PageHeader from "@/components/common/PageHeader";
 import { Nutrition } from "@/components/tracker/DailyTracker";
+import { useServerReady, LoadingPlans } from "@/components/sync/SyncProvider";
 import { dishName } from "@/lib/diet/dishName";
 
 // Only real days: from the plan's start (or account start), plus any day with logged meals.
@@ -37,13 +38,16 @@ async function load() {
 // Diet tab: tick off today's meals, then look back at what you actually ate.
 export default function DietHome() {
   const data = useLiveQuery(load, []);
+  const ready = useServerReady();
   if (!data) return <PageHeader title="Diet" icon={Utensils} />;
   const { daily, plan, history } = data;
 
   return (
     <>
       <PageHeader title="Diet" subtitle={plan?.name} icon={Utensils} />
-      {!plan ? (
+      {!plan && !ready ? (
+        <LoadingPlans />
+      ) : !plan ? (
         <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
           <h2 className="text-lg font-semibold">No diet plan yet</h2>
           <p className="mt-1 text-sm text-neutral-500">Bring in your plan or create one with AI, then tick off meals here.</p>

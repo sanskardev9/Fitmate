@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { getRest, subscribeRest, remainingMs, adjustRest, togglePause, skipRest, markRestDone, restAlert, restartRest } from "@/lib/workout/restTimer";
 import { formatDuration } from "@/lib/utils";
+import { localNotify } from "@/lib/push";
 
 const useRest = () => useSyncExternalStore(subscribeRest, getRest, () => null);
 
@@ -19,6 +20,8 @@ export default function RestTimerBar({ next }) {
       if (rest.pausedRemaining == null && remainingMs(rest) <= 0) {
         markRestDone();
         restAlert();
+        // FitMate is in the background: tell the phone.
+        localNotify(rest.label && rest.label !== "Timer" ? "Rest is over" : "Timer done", rest.label && rest.label !== "Timer" ? `You finished ${rest.label}. Next set is up.` : "Back to it.", { tag: "rest" });
       }
     }, 250);
     return () => clearInterval(id);

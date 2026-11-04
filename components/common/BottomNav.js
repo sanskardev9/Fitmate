@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, Dumbbell, Utensils, ChartColumn, ClipboardList } from "lucide-react";
+import AdminSwitch from "@/components/admin/AdminSwitch";
 import Logo from "./Logo";
 import AccountButton from "@/components/auth/AccountButton";
 import ThemeToggle from "./ThemeToggle";
@@ -46,7 +47,8 @@ export default function BottomNav() {
             );
           })}
         </ul>
-        <div className="mt-auto border-t border-neutral-200 pt-4 dark:border-neutral-800">
+        <div className="mt-auto space-y-3 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+          <AdminSwitch compact />
           <div className="flex items-center gap-1">
             <div className="min-w-0 flex-1">
               <AccountButton variant="sidebar" />

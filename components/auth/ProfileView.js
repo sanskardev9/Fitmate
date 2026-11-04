@@ -7,6 +7,9 @@ import { useAuth, displayName } from "./AuthProvider";
 import { cachedProfile, fetchProfile } from "@/lib/services/profileService";
 import { SyncStatus } from "./AccountButton";
 import TargetsForm from "@/components/targets/TargetsForm";
+import FeedbackCard from "@/components/feedback/FeedbackCard";
+import NotificationsCard from "./NotificationsCard";
+import AdminSwitch from "@/components/admin/AdminSwitch";
 
 const GOAL_LABEL = { lose_fat: "Lose fat", recomposition: "Build muscle & lose fat", build_muscle: "Build muscle", gain_strength: "Get stronger", calisthenics_skills: "Calisthenics skills", maintain: "Maintain", general_fitness: "General fitness" };
 
@@ -86,6 +89,12 @@ export default function ProfileView() {
           </ul>
         )}
       </section>
+
+      <NotificationsCard />
+
+      <FeedbackCard />
+
+      <AdminSwitch />
 
       <Link href="/reset-password" className="flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 py-3.5 font-semibold hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
         <KeyRound className="h-5 w-5" /> Change password
