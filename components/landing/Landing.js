@@ -382,7 +382,7 @@ function Matters() {
         <Reveal className="min-w-0 text-center md:text-left">
           <p className="text-sm font-semibold tracking-wider text-emerald-600 uppercase">Why it matters</p>
           <h2 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">
-            Small days
+            Small days 
             <br />
             <span className="text-gradient animate-shimmer">add up.</span>
           </h2>
