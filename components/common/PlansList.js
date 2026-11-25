@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Dumbbell, Salad, CircleCheck, Copy, Archive, Trash2, Plus, ListChecks, X } from "lucide-react";
+import { Dumbbell, Salad, CircleCheck, Copy, Archive, Trash2, Plus, ListChecks, X, RotateCcw } from "lucide-react";
 import { db } from "@/lib/db/dexie";
 import { getPreferences, setPreference } from "@/lib/services/preferencesService";
-import { listWorkoutPlans, duplicateWorkoutPlan, updateWorkoutPlan, deleteWorkoutPlan } from "@/lib/services/workoutService";
-import { listDietPlans, updateDietPlan, deleteDietPlan } from "@/lib/services/dietService";
+import { listWorkoutPlans, duplicateWorkoutPlan, updateWorkoutPlan, deleteWorkoutPlan, restartWorkoutPlan } from "@/lib/services/workoutService";
+import { listDietPlans, updateDietPlan, deleteDietPlan, restartDietPlan } from "@/lib/services/dietService";
+import { toast } from "@/lib/toast";
 import { useConfirm } from "./ConfirmDialog";
 import PlanImport from "./PlanImport";
 
@@ -43,6 +44,20 @@ export default function PlansList() {
     return true;
   }
 
+  async function restart(kind, plan) {
+    const isWorkout = kind === "workout";
+    const ok = await confirm({
+      title: `Restart "${plan.name}"?`,
+      message: isWorkout
+        ? "Starts again from week 1: targets go back to the plan as written and the 4-week blocks count from today. Your logged workouts are kept."
+        : "Starts the menu again from week 1: meals go back to the plan as written and the weekly rotation counts from today. Your meal logs are kept.",
+      confirmLabel: "Restart",
+    });
+    if (!ok) return;
+    await (isWorkout ? restartWorkoutPlan(plan.id) : restartDietPlan(plan.id));
+    toast.success(`${plan.name} restarted from week 1`);
+  }
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Section
@@ -54,6 +69,7 @@ export default function PlansList() {
         activeId={data.prefs.activeWorkoutPlanId}
         onActivate={(id) => setPreference("activeWorkoutPlanId", id)}
         onDuplicate={(id) => duplicateWorkoutPlan(id)}
+        onRestart={(p) => restart("workout", p)}
         onArchive={(id) => updateWorkoutPlan(id, { archived: true })}
         onDelete={(plans) => removeMany("workout", plans)}
       />
@@ -65,6 +81,7 @@ export default function PlansList() {
         itemLabel="meals"
         activeId={data.prefs.activeDietPlanId}
         onActivate={(id) => setPreference("activeDietPlanId", id)}
+        onRestart={(p) => restart("diet", p)}
         onArchive={(id) => updateDietPlan(id, { archived: true })}
         onDelete={(plans) => removeMany("diet", plans)}
       />
@@ -72,7 +89,7 @@ export default function PlansList() {
   );
 }
 
-function Section({ kind, title, Icon, plans, itemLabel, activeId, onActivate, onDuplicate, onArchive, onDelete }) {
+function Section({ kind, title, Icon, plans, itemLabel, activeId, onActivate, onDuplicate, onRestart, onArchive, onDelete }) {
   const [selecting, setSelecting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [selected, setSelected] = useState([]);
@@ -139,6 +156,7 @@ function Section({ kind, title, Icon, plans, itemLabel, activeId, onActivate, on
                   {!selecting && (
                     <div className="flex shrink-0 items-center gap-0.5">
                       {!active && <IconAction label="Set as active plan" Icon={CircleCheck} onClick={() => onActivate(p.id)} tone="good" />}
+                      <IconAction label="Restart from week 1" Icon={RotateCcw} onClick={() => onRestart(p)} />
                       {onDuplicate && <IconAction label="Duplicate" Icon={Copy} onClick={() => onDuplicate(p.id)} />}
                       <IconAction label="Archive" Icon={Archive} onClick={() => onArchive(p.id)} />
                       <IconAction label="Delete" Icon={Trash2} onClick={() => onDelete([p])} tone="danger" />

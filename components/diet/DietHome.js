@@ -7,7 +7,7 @@ import { ChevronDown, Utensils } from "lucide-react";
 import { db } from "@/lib/db/dexie";
 import { loadDaily } from "@/lib/services/insights";
 import { getMealsForWeekday, getMealLogsForDate, sumNutrition } from "@/lib/services/dietService";
-import { todayKey } from "@/lib/utils";
+import { todayKey, planStartMs } from "@/lib/utils";
 import PageHeader from "@/components/common/PageHeader";
 import MusicButton from "@/components/music/MusicButton";
 import { Nutrition } from "@/components/tracker/DailyTracker";
@@ -32,7 +32,7 @@ async function loadHistory(planId, since, days = 14) {
 async function load() {
   const daily = await loadDaily();
   const plan = daily.prefs.activeDietPlanId ? await db.dietPlans.get(daily.prefs.activeDietPlanId) : null;
-  const start = plan?.createdAt ? new Date(plan.createdAt) : null;
+  const start = planStartMs(plan) ? new Date(planStartMs(plan)) : null;
   start?.setHours(0, 0, 0, 0);
   return { daily, plan, history: await loadHistory(daily.prefs.activeDietPlanId, start?.getTime() ?? Date.now()) };
 }
